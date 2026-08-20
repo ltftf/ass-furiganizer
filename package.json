@@ -15,6 +15,13 @@
     "furiganize": "bin/index.js",
     "furiganizer-config": "bin/configApp.js"
   },
+  "bugs": {
+    "url": "https://github.com/ltftf/ass-furiganizer/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ltftf/ass-furiganizer.git"
+  },
   "keywords": [
     "furigana",
     "subtitles",
