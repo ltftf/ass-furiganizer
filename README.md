@@ -5,7 +5,7 @@ A CLI utility to easily generate beautiful Japanese subtitles with furigana.
 ## Who can use it
 
 - Japanese learners
-- Video creators - you can fix any mistakes in the automatically generated furigana (see [blueprint](#generate-blueprint)) then hardcode the subtitles into the video with a video editor of your choice.
+- Video creators - you can fix any mistakes in the automatically generated furigana (see [blueprint](#--generate-blueprint)) then hardcode the subtitles into the video with a video editor of your choice.
 
 ## Table of Contents
 
@@ -61,14 +61,14 @@ A CLI utility to easily generate beautiful Japanese subtitles with furigana.
 	+ [`AxesArray`](#axesarray)
 	+ [`Font`](#font)
 - [Command Line options](#command-line-options)
-	+ [`--config-name`](#config-name)
-	+ [`--font-path`](#font-path)
-	+ [`--shift-time`](#shift-time)
-	+ [`--generate-blueprint`](#generate-blueprint)
-	+ [`--ignore-output-dir`](#ignore-output-dir)
-	+ [`--print-all-chars`](#print-all-chars)
-	+ [`--no-embed-font`](#no-embed-font)
-	+ [`--resolution`](#resolution)
+	+ [`--config-name`](#--config-name)
+	+ [`--font-path`](#--font-path)
+	+ [`--shift-time`](#--shift-time)
+	+ [`--generate-blueprint`](#--generate-blueprint)
+	+ [`--ignore-output-dir`](#--ignore-output-dir)
+	+ [`--print-all-chars`](#--print-all-chars)
+	+ [`--no-embed-font`](#--no-embed-font)
+	+ [`--resolution`](#--resolution)
 - [How does it work](#how-does-it-work)
 - [Examples](#examples)
 
@@ -125,11 +125,11 @@ furiganizer-config --generate
 
 ## Configuration options
 
-### `positioning`
+### positioning
 
-#### `position`
+#### position
 
-Type: `number`
+Type: number
 
 Description: text position on the screen in Numpad style, e.g., 2 - bottom, 8 - top:
 
@@ -141,228 +141,228 @@ Description: text position on the screen in Numpad style, e.g., 2 - bottom, 8 - 
 └───────────────┘
 ```
 
-#### `align`
+#### align
 
-Type: `'start' | 'center' | 'end' | 'auto'`
+Type: 'start' | 'center' | 'end' | 'auto'
 
-Description: text alignment. `'auto'` aligns text based on the `position` towards the closest border (`'start'` for 1,4,7; `'end'` for 3,6,9), otherwise centered.
+Description: text alignment. `auto` aligns text based on the [`position`](#position) towards the closest border (`start` for 1,4,7; `end` for 3,6,9), otherwise centered.
 
-#### `furigana_offset`
+#### furigana_offset
 
-Type: `number`
+Type: number
 
 Description: distance between text and furigana in px.
 
-#### `line_distance`
+#### line_distance
 
-Type: `number`
+Type: number
 
 Description: distance between lines in px.
 
-#### `margin`
+#### margin
 
-Type: `number`
+Type: number
 
 Description: offset from the border in px.
 
-#### `shift`
+#### shift
 
-Type: `[number, number]`
+Type: [number, number]
 
-Description: optionally move the subtitles by the `[x, y]` axes in px (see [`AxesArray`](#axesarray)). 
+Description: optionally move the subtitles by the `[x, y]` axes in px (see [AxesArray](#axesarray)). 
 
-### `styles.text`, `styles.furigana`
+### styles.text, styles.furigana
 
-#### `fontsize`
+#### fontsize
 
-Type: `number`
+Type: number
 
 Description: text size (height) in px. 
 
-#### `bold`
+#### bold
 
-Type: `boolean`
+Type: boolean
 
 Description: make text bolder.
 
-#### `italic`
+#### italic
 
-Type: `boolean`
+Type: boolean
 
 Description: make text italic.
 
-#### `outline`
+#### outline
 
-Type: `number`
+Type: number
 
 Description: text border size in px.
 
-#### `shadow`
+#### shadow
 
-Type: `number`
+Type: number
 
 Description: distance of the shadow from the text in px.
 
-#### `color`
+#### color
 
 Type: string
 
-Description: color of the text. See [`Color`](#color).
+Description: color of the text. See [Color](#color-2).
 
-#### `outline_color`
-
-Type: string
-
-Description: color of the text border. See [`Color`](#color).
-
-#### `shadow_color`
+#### outline_color
 
 Type: string
 
-Description: color of the text shadow. See [`Color`](#color).
+Description: color of the text border. See [Color](#color-2).
 
-### `styles.furigana`
+#### shadow_color
 
-#### `scale_factor`
+Type: string
+
+Description: color of the text shadow. See [Color](#color-2).
+
+### styles.furigana
+
+#### scale_factor
 
 Type: number
 
 Description: if this is specified, everything in the `styles.furigana` block will be ignored and the text styles used for furigana. `furigana.fontsize = text.fontsize * scale_factor`. This should be a positive decimal number. If this is commented with a `#`, the furigana styles are provided separately.
 
-### `styles.opaque_box`
+### styles.opaque_box
 
-#### `enable`
+#### enable
 
-Type: `boolean`
+Type: boolean
 
 Description: display text background. For now this can't be used with subtitles that have overlaps (a subtitle starts before the last one ends).
 
-#### `padding`
+#### padding
 
-Type: `number` | `[number, number]`
+Type: number | [number, number]
 
-Description: background padding in px. Can be a number or an array for separate horizontal and vertical padding (see [`AxesArray`](#axesarray)).
+Description: background padding in px. Can be a number or an array for separate horizontal and vertical padding (see [AxesArray](#axesarray)).
 
-#### `outline`
+#### outline
 
 Type: number
 
 Description: background outline in px.
 
-#### `shadow`
+#### shadow
 
 Type: number
 
 Description: distance of the shadow from the background in px.
 
-#### `border_radius`
+#### border_radius
 
 Type: number
 
 Description: make the corners of the box rounded. Radius in px.
 
-#### `color`
+#### color
 
 Type: string
 
-Description: color of the box. See [`Color`](#color).
+Description: color of the box. See [Color](#color-2).
 
-#### `outline_color`
-
-Type: string
-
-Description: color of the box border. See [`Color`](#color).
-
-#### `shadow_color`
+#### outline_color
 
 Type: string
 
-Description: color of the box shadow. See [`Color`](#color).
+Description: color of the box border. See [Color](#color-2).
 
-### `styles.blur`
+#### shadow_color
 
-#### `text`, `furigana`, `opaque_box`
+Type: string
 
-Type: `number`
+Description: color of the box shadow. See [Color](#color-2).
+
+### styles.blur
+
+#### text, furigana, opaque_box
+
+Type: number
 
 Description: blur the outline if it is nonzero, otherwise blur text or box.
 
-### `styles.shadow_direction`
+### styles.shadow_direction
 
-#### `text`, `furigana`, `opaque_box`
+#### text, furigana, opaque_box
 
-Type: `[number, number]`
+Type: [number, number]
 
 Description: uncomment to override shadow direction. If `shadow = <n>`, it is the same as `shadow_direction = [<n>, <n>]`. These values unlike shadow can be negative. At least one of the values should be nonzero.
 
-See [`AxesArray`](#axesarray).
+See [AxesArray](#axesarray).
 
-### `styles`
+### styles
 
-#### `font_path`
+#### font_path
 
-Type: `string`
+Type: string
 
-Description: see [`Font`](#font).
+Description: see [Font](#font).
 
-#### `consistent_font_size`
+#### consistent_font_size
 
-Type: `boolean`
+Type: boolean
 
 Description: adjust font size for different video resolutions. This will make the proportion of the text size to the video height remain constant. This way if you open two videos of different resolutions in full screen the subtitles will look the same. All the values specified in px will remain as is for 1080p resolution and will be adjusted for other resolutions.
 
-### `miscellaneous`
+### miscellaneous
 
-#### `output_dir`
+#### output_dir
 
-Type: `string`
+Type: string
 
 Description: directory to save generated subtitles to. The directory where your video player looks for subtitles can be provided here.
 
-#### `analyzer`
+#### analyzer
 
-Type: `string`
+Type: string
 
 Description: choose the morphological analyzer. Can be `kuromoji` or `mecab`. `kuromoji` does not require any configuration. If you want to use `mecab` you need to install it on your machine and make sure it's in the PATH.
 
-#### `add_suffix`
+#### add_suffix
 
-Type: `boolean`
+Type: boolean
 
 Description: add a language suffix to the name of the generated file (`<video_name>.<suffix>.ass`).
 
-#### `suffix`
+#### suffix
 
-Type: `string`
+Type: string
 
 Description: suffix to add.
 
-#### `interactive`
+#### interactive
 
-Type: `boolean`
+Type: boolean
 
 Description: you'll be prompted for options if a variable font or font collection is provided. If set to false the default variation or the first font from the collection will be used.
 
-### `substitute`
+### substitute
 
-#### `text`
+#### text
 
-Type: `[string, string][]`
+Type: [string, string][]
 
 Description: substitute one or more characters. May be useful when there are unimportant characters that are unsupported by the font. Takes an array consisting of arrays that have two strings: [`<match>`, `<substitute>`]. `<substitute>` should be an empty string to remove the `<match>` character(s). `<match>` can be a Unicode string representing one character: `U+0049`, `U+1F610`.
 
-#### `furigana`
+#### furigana
 
-Type: `[string, string][]`
+Type: [string, string][]
 
-Description: may be useful for furigana if you, for example, need a specific katakana phrase as the analyzer will turn everything to hiragana. Works the same as for `text` but will only match the full phrase.
+Description: may be useful for furigana if you, for example, need a specific katakana phrase as the analyzer will turn everything to hiragana. Works the same as for [`text`](#text) but will only match the full phrase.
 
 ## Configuration types
 
 ### Color
 
 Color is a string that can be:
-- a [`named`](https://www.w3.org/TR/SVG11/types.html#ColorKeywords) color value: 'white', 'black', 'yellow'
+- a [named](https://www.w3.org/TR/SVG11/types.html#ColorKeywords) color value: 'white', 'black', 'yellow'
 - a HEX color: '#ffffff', '#ffffff80'
 - an RGB color: 'rgb(255,255,255)', 'rgba(255,255,255,0.5)'
 - a native `SubStation Alpha` color.
@@ -395,7 +395,7 @@ By default, `config.toml` is used.
 furiganize -i *.srt -v *.mkv -f MyFont.ttf
 ```
 
-See [`Font`](#font)
+See [Font](#font)
 
 ### --shift-time
 
