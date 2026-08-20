@@ -293,7 +293,7 @@ Description: blur the outline if it is nonzero, otherwise blur text or box.
 
 Type: [number, number]
 
-Description: uncomment to override shadow direction. If `shadow = <n>`, it is the same as `shadow_direction = [<n>, <n>]`. These values unlike shadow can be negative. At least one of the values should be nonzero.
+Description: uncomment to override shadow direction. If `shadow = <n>`, it is the same as `shadow_direction = [<n>, <n>]`. These values unlike `shadow` can be negative. At least one of the values should be nonzero.
 
 See [AxesArray](#axesarray).
 
