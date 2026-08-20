@@ -1,0 +1,72 @@
+{
+  "name": "ass-furiganizer",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "esbuild src/index.ts src/configApp.ts --outdir=bin/ --bundle --platform=node --format=esm --packages=external --sourcemap",
+    "test-dev": "DIR=~/Desktop ; VID_EXT=mkv ; npm run build && clear && NODE_OPTIONS=--enable-source-maps node bin/index.js -i $DIR/*.srt -v $DIR/*.$VID_EXT && mpv $DIR/*.$VID_EXT > /dev/null 2>&1",
+    "test-visual": "npm run build && esbuild tests/test-visual.ts --outfile=tests/_test-visual.js --platform=node --format=esm --minify --sourcemap && clear && NODE_OPTIONS=--enable-source-maps node tests/_test-visual.js",
+    "test-visual-fonts": "npm run build && clear && NODE_OPTIONS=--enable-source-maps node tests/test-fonts.js",
+    "test-clean": "cd tests && rm -f videos/*.ass generated*/* _test*",
+    "test": "vitest",
+    "postinstall": "node scripts/createConfig.js"
+  },
+  "bin": {
+    "furiganize": "bin/index.js",
+    "furiganizer-config": "bin/configApp.js"
+  },
+  "keywords": [
+    "furigana",
+    "subtitles",
+    "subs",
+    "japanese",
+    "ass"
+  ],
+  "description": "Create .ass format subtitles with furigana",
+  "author": "Ilia Baranov <ltftf4@gmail.com>",
+  "homepage": "https://github.com/ltftf/ass-furiganizer",
+  "license": "GPL-3.0",
+  "files": [
+    "bin/*.js",
+    "fonts/",
+    "scripts/",
+    "default_config.toml"
+  ],
+  "devDependencies": {
+    "@types/d3-color": "^3.1.3",
+    "@types/fontkit": "^2.0.9",
+    "@types/node": "^25.6.0",
+    "@types/ospath": "^1.2.3",
+    "@types/prompts": "^2.4.9",
+    "@types/subset-font": "^2.3.0",
+    "ass-compiler": "^0.1.16",
+    "async": "^3.2.6",
+    "esbuild": "^0.28.0",
+    "ora": "^9.4.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  },
+  "dependencies": {
+    "@ffprobe-installer/ffprobe": "^2.1.2",
+    "@inquirer/prompts": "^8.4.2",
+    "@ltftf/srt-parser-2": "^2.1.3",
+    "@ts-ffmpeg/fluent-ffmpeg": "^2.2.6",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3",
+    "confbox": "^0.2.4",
+    "d3-color": "^3.1.0",
+    "extract-ttf": "^2.0.0",
+    "fonteditor-core": "^2.6.3",
+    "fontkit": "^2.0.4",
+    "is-interactive": "^2.0.0",
+    "json5": "^2.2.3",
+    "kuroshiro": "^1.2.0",
+    "kuroshiro-analyzer-kuromoji": "^1.1.0",
+    "kuroshiro-analyzer-mecab": "^1.0.1",
+    "node-html-parser": "^7.1.0",
+    "ospath": "^1.2.2",
+    "prompts": "^2.4.2",
+    "subset-font": "^2.5.0",
+    "uuencode4ass": "^1.0.0"
+  }
+}
