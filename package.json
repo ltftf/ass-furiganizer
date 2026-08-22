@@ -1,7 +1,7 @@
 {
   "name": "ass-furiganizer",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "scripts": {
     "build": "esbuild src/index.ts src/configApp.ts --outdir=bin/ --bundle --platform=node --format=esm --packages=external --sourcemap",
     "test-dev": "DIR=~/Desktop ; VID_EXT=mkv ; npm run build && clear && NODE_OPTIONS=--enable-source-maps node bin/index.js -i $DIR/*.srt -v $DIR/*.$VID_EXT && mpv $DIR/*.$VID_EXT > /dev/null 2>&1",

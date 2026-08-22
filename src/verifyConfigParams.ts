@@ -220,6 +220,10 @@ export function verifyConfigParams(params: ConfigParams, configName: string, par
     warning("'analyzer' must be 'kuromoji' or 'mecab'. Using: 'kuromoji'", configName)
     params.miscellaneous.analyzer = "kuromoji";
   }
+  if (notUndefinedOr("boolean", params.miscellaneous.remove_inline_furigana)) {
+    warning("'remove_inline_furigana': expected a boolean", configName)
+    params.miscellaneous.remove_inline_furigana = true;
+  }
   if (notUndefinedOr("boolean", params.miscellaneous.add_suffix)) {
     warning("'add_suffix': expected a boolean", configName)
     params.miscellaneous.add_suffix = false;

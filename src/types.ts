@@ -87,6 +87,7 @@ export interface ConfigParams {
   miscellaneous: {
     output_dir: string | undefined;
     analyzer: "kuromoji" | "mecab";
+    remove_inline_furigana: boolean | undefined;
     add_suffix: boolean | undefined;
     suffix: string | undefined;
     interactive: boolean | undefined;

@@ -50,34 +50,45 @@ export class VideoSubs {
 
       this.dialogues = await furiganize(parsedSrt);
 
-      for (let i = 0; i < this.dialogues.length; i++) {
-        const dialogue = this.dialogues[i];
+      for (let di = 0; di < this.dialogues.length; di++) {
+        const dialogue = this.dialogues[di];
         for (const line of dialogue.lines) {
-          for (const chunk of line) {
+          for (let ci = 0; ci < line.length; ci++) {
+            const chunk = line[ci];
             chunk.furigana = chunk.furigana.trim();
             for (const [find, replace] of params.substitute.furigana) {
               if (chunk.furigana && chunk.furigana === find) {
                 chunk.furigana = replace;
               }
             }
+            if (params.miscellaneous.remove_inline_furigana && ci < line.length - 1) {
+              const chunkNext = line[ci + 1];
+              const furigana = chunk.furigana;
+              if (furigana) {
+                chunkNext.text = chunkNext.text.replace(
+                  new RegExp(`^\\s*\\(\\s*${furigana}\\s*\\)`),
+                  ""
+                );
+              }
+            }
           }
         }
-        if (i < this.dialogues.length - 1) {
-          const dialogueNext = this.dialogues[i + 1];
+        if (di < this.dialogues.length - 1) {
+          const dialogueNext = this.dialogues[di + 1];
           if (
             timeToSeconds(dialogueNext.startTime) <
             timeToSeconds(dialogue.endTime)
           ) {
             if ([4, 5, 6].includes(params.positioning.position)) {
               throw (
-                `found dialogue overlap at dialogue ${i + 2}. Can't handle ` +
+                `found dialogue overlap at dialogue ${di + 2}. Can't handle ` +
                 "overlapping when the subtitles are centered vertically. Use any " +
                 "'position' other than 4, 5 or 6 with 'shift' instead"
               );
             }
             if (params.styles.opaque_box?.enable) {
               throw (
-                `found dialogue overlap at dialogue ${i + 2}. Can't draw ` +
+                `found dialogue overlap at dialogue ${di + 2}. Can't draw ` +
                 "opaque box with overlapping dialogues"
               );
             }

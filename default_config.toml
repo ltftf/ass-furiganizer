@@ -1,73 +1,74 @@
 # Note: remove the leading hashtag (#) to uncomment the option
 
 [positioning]
-position = 2                    # text position on the screen (Numpad style, e.g., 2 - bottom, 8 - top)
-align = "auto"                  # text alignment ('start', 'center', 'end', or 'auto')
-furigana_offset = 8             # distance between main text and furigana in px
-line_distance = 22              # distance between lines in px
-margin = 90                     # text offset from the border in px
-shift = [0, 0]                  # shift text by [x, y] axes in px
+position = 2                     # text position on the screen (Numpad style, e.g., 2 - bottom, 8 - top)
+align = "auto"                   # text alignment ('start', 'center', 'end', or 'auto')
+furigana_offset = 8              # distance between main text and furigana in px
+line_distance = 22               # distance between lines in px
+margin = 90                      # text offset from the border in px
+shift = [0, 0]                   # shift text by [x, y] axes in px
 
 [styles.text]
-fontsize = 40                   # main text size in px
-bold = false                    # make text bolder
-italic = false                  # make text italic
-outline = 2                     # text border size in px
-shadow = 0                      # distance from text in px
-color = "white"                 # text color
-outline_color = "black"         # text outline color
-shadow_color = "black"          # text shadow color
+fontsize = 40                    # main text size in px
+bold = false                     # make text bolder
+italic = false                   # make text italic
+outline = 2                      # text border size in px
+shadow = 0                       # distance from text in px
+color = "white"                  # text color
+outline_color = "black"          # text outline color
+shadow_color = "black"           # text shadow color
 
 [styles.furigana]
-fontsize = 16                   # furigana size in px
-bold = false                    # make furigana bolder
-italic = false                  # make text italic
-outline = 1.5                   # furigana border size in px
-shadow = 0                      # distance from text in px
-color = "white"                 # furigana color
-outline_color = "black"         # furigana outline color
-shadow_color = "black"          # furigana shadow color
-# scale_factor = 0.4            # if this is uncommented, everything in this block will be
-                                #   ignored and the text styles will be preserved for furigana.
-                                #   furigana.fontsize = text.fontsize * scale_factor
+fontsize = 16                    # furigana size in px
+bold = false                     # make furigana bolder
+italic = false                   # make text italic
+outline = 1.5                    # furigana border size in px
+shadow = 0                       # distance from text in px
+color = "white"                  # furigana color
+outline_color = "black"          # furigana outline color
+shadow_color = "black"           # furigana shadow color
+# scale_factor = 0.4             # if this is uncommented, everything in this block will be
+                                 #   ignored and the text styles will be preserved for furigana.
+                                 #   furigana.fontsize = text.fontsize * scale_factor
 
 [styles.opaque_box]
-enable = false                  # display opaque box (text background)
-padding = 20                    # padding in px, or [<horizontal>, <vertical>] padding 
-outline = 0                     # opaque box border in px
-shadow = 0                      # distance from box in px
-border_radius = 0               # rounded corners (radius in px)
-color = "black"                 # opaque box color
-outline_color = "black"         # opaque box border color
-shadow_color = "black"          # opaque box shadow color
+enable = false                   # display opaque box (text background)
+padding = 20                     # padding in px, or [<horizontal>, <vertical>] padding 
+outline = 0                      # opaque box border in px
+shadow = 0                       # distance from box in px
+border_radius = 0                # rounded corners (radius in px)
+color = "black"                  # opaque box color
+outline_color = "black"          # opaque box border color
+shadow_color = "black"           # opaque box shadow color
 
-[styles.blur]                   # only blurs the outline if it is nonzero, otherwise blurs text or box
+[styles.blur]                    # only blurs the outline if it is nonzero, otherwise blurs text or box
 text = 0
 furigana = 0
 opaque_box = 0
 
-[styles.shadow_direction]       # override shadow direction
+[styles.shadow_direction]        # override shadow direction
 # text = [0, 0]
 # furigana = [0, 0]
 # opaque_box = [0, 0]
 
 [styles]
-font_path = ""                  # path to your font file
-consistent_font_size = false    # normalize font size for different video resolutions
+font_path = ""                   # path to your font file
+consistent_font_size = false     # normalize font size for different video resolutions
 
 [miscellaneous]
-output_dir = ""                 # the directory where your player looks for subs can be specified here
-analyzer = "kuromoji"           # 'kuromoji' or 'mecab'
-add_suffix = false              # add suffix to the script name: <video_name>.<suffix>.ass
-suffix = "ja"                 
-interactive = true              # prompt when a variable font or font collection is used
+output_dir = ""                  # the directory where your player looks for subs can be specified here
+analyzer = "kuromoji"            # 'kuromoji' or 'mecab'
+remove_inline_furigana = true    # remove parenthesized kanji reading if it matches the generated furigana
+add_suffix = false               # add suffix to the script name: <video_name>.<suffix>.ass
+suffix = "ja"
+interactive = true               # prompt when a variable font or font collection is used
 
 [substitute]
-text = [                        # one or more characters, or one unicode ("U+...")
-  ["", ""],                     
+text = [                         # one or more characters, or one unicode ("U+...")
+  ["", ""],
   ["", ""],
 ]
-furigana = [                    # must match a whole separate furigana phrase
+furigana = [                     # must match a whole separate furigana phrase
   ["", ""],
   ["", ""],
 ]
