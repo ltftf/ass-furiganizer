@@ -22,7 +22,7 @@ export function verifyConfigParams(params: ConfigParams, configName: string, par
   function checkKeys(paramKeys: any, refKeys: any) {
     for (const key of Object.keys(paramKeys)) {
       if (!Object.keys(refKeys).includes(key)) {
-        throw new AppError(`unexpected key: '${path.concat(key).join(".")}'`, configName);
+        throw new AppError(`unexpected option: '${path.concat(key).join(".")}'`, configName);
       }
     }
   }
@@ -236,7 +236,7 @@ export function verifyConfigParams(params: ConfigParams, configName: string, par
     params.miscellaneous.add_suffix = false;
   }
   if (notUndefinedOr("boolean", params.miscellaneous.interactive)) {
-    warning("'console_interactivity': expected a boolean", configName)
+    warning("'interactive': expected a boolean", configName)
     params.miscellaneous.interactive = true;
   }
 
