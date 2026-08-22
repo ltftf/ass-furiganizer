@@ -239,6 +239,11 @@ export function verifyConfigParams(params: ConfigParams, configName: string, par
     warning("'interactive': expected a boolean", configName)
     params.miscellaneous.interactive = true;
   }
+  for (const opt of ["interactive", "remove_inline_furigana"]) {
+    if (params.miscellaneous[opt] === undefined) {
+      params.miscellaneous[opt] = true;
+    }
+  }
 
   if (!Object.keys(params).includes("substitute")) {
     params.substitute = {} as Substitute;
