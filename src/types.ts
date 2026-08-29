@@ -19,6 +19,7 @@ export interface Dialogue {
   endTime: string;
   lines: Line[];
   opaqueBox: string;
+  position?: number;
 }
 
 /**

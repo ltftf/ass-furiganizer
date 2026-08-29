@@ -42,6 +42,7 @@ export async function furiganize(srt: SrtDialogue[]): Promise<Dialogue[]> {
       endTime,
       lines: [],
       opaqueBox: "",
+      position: srtBlock.position,
     };
     for (const srtLine of srtBlock.lines) {
       const line: Line = [];

@@ -80,8 +80,8 @@ export function verifyConfigParams(params: ConfigParams, configName: string, par
     params.positioning.line_distance = 22;
   }
   if (!Number.isFinite(params.positioning.margin)) {
-    warning("'margin': expected a number. Using: 90", configName);
-    params.positioning.margin = 90;
+    warning("'margin': expected a number. Using: 50", configName);
+    params.positioning.margin = 50;
   }
   verifyAxesArray(params, "positioning", "shift");
 

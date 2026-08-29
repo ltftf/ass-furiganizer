@@ -8,7 +8,7 @@ import { CliParams, ConfigParams, VariationAxes } from "./types.js";
 import { create, Font, FontCollection } from "fontkit";
 import { createFont } from 'fonteditor-core';
 import { setAnalyzer } from "./kuroshiro.js";
-import { positionSubs } from "./positionSubs.js";
+import { processSubs } from "./positionSubs.js";
 import { VideoSubs } from "./VideoSubs.js";
 import { error, highlight, printResult, style, warning } from "./log.js";
 import { compileAss } from "./compileAss.js";
@@ -415,7 +415,8 @@ try {
         matrix = "None";
       } else {
         printFail(
-          "failed to detect the video resolution. Please provide --resolution",
+          `failed to detect the resolution of video ${highlight(inputVideoFile)}. ` +
+          "If the path is correct, please provide --resolution",
           basename(inputVideoFile)
         );
         continue;
@@ -508,7 +509,7 @@ try {
 
 
     try {
-      positionSubs(subs, font, config_params, resX, resY);
+      processSubs(subs, font, resX, resY);
     } catch (e: any) {
       printFail(e, outputSubName);
       continue;
@@ -542,7 +543,7 @@ try {
     if (generateBlueprint && !inputSubName.endsWith(".bp")) {
       const blueprintFile = setExtension(inputSubFile, "bp");
       try {
-        await fs.writeFile(blueprintFile, subs.generateBlueprint());
+        await fs.writeFile(blueprintFile, subs.generateBlueprint(), { encoding: "utf-8" });
       } catch (e: any) {
         error("could not save blueprint: " + e.message, basename(blueprintFile));
       }

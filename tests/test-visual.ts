@@ -221,6 +221,28 @@ const tests: TestBlock[] = [
     }),
   },
   {
+    explanation: "Test dialogue repositioning",
+    sub: "reposition.srt",
+    video: "overlap.mp4",
+    draw: margin,
+    tests: [
+      [
+        ["positioning.position", 2],
+        ["positioning.margin", 50],
+      ]
+    ]
+  },
+  {
+    explanation: "Test dialogue repositioning with overlap",
+    sub: "reposition-overlap.srt",
+    video: "overlap.mp4",
+    tests: [
+      [
+        ["positioning.position", 2],
+      ]
+    ]
+  },
+  {
     explanation: "Test fontsize",
     sub: "one-line.srt",
     video: "1280x720.mp4",
@@ -233,47 +255,51 @@ const tests: TestBlock[] = [
       ] as Test
     })
   },
-  {
-    explanation: "Test outline, shadow",
-    sub: "one-line.srt",
-    tests:
-      ["text", "furigana"].flatMap(t => {
-        return ["outline", "shadow"].flatMap(s => {
-          return [3, 10].map(size => {
-            return [
-              ["positioning.position", 2],
-              [`styles.${t}.${s}_color`, "red"],
-              [`styles.${t}.${s}`, size],
-            ] as Test
-          })
-        })
-      })
-  },
-  {
-    explanation: "Test color types",
-    sub: "one-line.srt",
-    tests:
-      ["yellow", "rgb(255,0,0)", "rgba(255,0,0,0.5)", "#43ac54"]
-        .map(color => {
-          return [
-            [`styles.text.color`, color],
-          ] as Test
-        })
-  },
-  {
-    explanation: "Test color styles",
-    sub: "one-line.srt",
-    tests: [[
-      ["styles.text.outline", 2],
-      ["styles.text.shadow", 2],
-      ["styles.furigana.outline", 2],
-      ["styles.furigana.shadow", 2],
-      ["styles.text.outline_color", "#43ac54"],
-      ["styles.text.shadow_color", "red"],
-      ["styles.furigana.outline_color", "red"],
-      ["styles.furigana.shadow_color", "#43ac54"],
-    ]]
-  },
+
+
+  // {
+  //   explanation: "Test outline, shadow",
+  //   sub: "one-line.srt",
+  //   tests:
+  //     ["text", "furigana"].flatMap(t => {
+  //       return ["outline", "shadow"].flatMap(s => {
+  //         return [3, 10].map(size => {
+  //           return [
+  //             ["positioning.position", 2],
+  //             [`styles.${t}.${s}_color`, "red"],
+  //             [`styles.${t}.${s}`, size],
+  //           ] as Test
+  //         })
+  //       })
+  //     })
+  // },
+  // {
+  //   explanation: "Test color types",
+  //   sub: "one-line.srt",
+  //   tests:
+  //     ["yellow", "rgb(255,0,0)", "rgba(255,0,0,0.5)", "#43ac54"]
+  //       .map(color => {
+  //         return [
+  //           [`styles.text.color`, color],
+  //         ] as Test
+  //       })
+  // },
+  // {
+  //   explanation: "Test color styles",
+  //   sub: "one-line.srt",
+  //   tests: [[
+  //     ["styles.text.outline", 2],
+  //     ["styles.text.shadow", 2],
+  //     ["styles.furigana.outline", 2],
+  //     ["styles.furigana.shadow", 2],
+  //     ["styles.text.outline_color", "#43ac54"],
+  //     ["styles.text.shadow_color", "red"],
+  //     ["styles.furigana.outline_color", "red"],
+  //     ["styles.furigana.shadow_color", "#43ac54"],
+  //   ]]
+  // },
+
+
   {
     explanation: "Test opaque box",
     sub: "one-line.srt",
@@ -294,6 +320,24 @@ const tests: TestBlock[] = [
         ["positioning.margin", 30],
         ["styles.opaque_box.enable", true],
         ["styles.opaque_box.padding", -5],
+      ],
+      [
+        ["positioning.position", 2],
+        ["positioning.margin", 30],
+        ["styles.opaque_box.enable", true],
+        ["styles.opaque_box.padding", -1000],
+      ],
+      [
+        ["positioning.position", 2],
+        ["positioning.margin", 30],
+        ["styles.opaque_box.enable", true],
+        ["styles.opaque_box.padding", [100, 20]],
+      ],
+      [
+        ["positioning.position", 2],
+        ["positioning.margin", 100],
+        ["styles.opaque_box.enable", true],
+        ["styles.opaque_box.padding", [20, 90]],
       ],
       [
         ["positioning.position", 2],

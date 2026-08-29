@@ -1,7 +1,6 @@
 import { Font } from "fontkit";
 import {
   Chunk,
-  ConfigParams,
   Dialogue,
   Line,
   PositionCoors,
@@ -9,65 +8,32 @@ import {
 } from "./types.js";
 import { VideoSubs } from "./VideoSubs.js";
 import { timeToSeconds } from "./time.js";
+import { AppError, getUnicodeHex } from "./utils.js";
 
-function verifyMetricValue(value: number, allowInfinity?: boolean) {
+let
+  font: Font,
+  resX: number,
+  resY: number,
+  ascent: number,
+  descent: number,
+  fontMetricHeight: number;
+
+function verifyMetricValue(value: number, char: string, allowInfinity?: boolean) {
   if (typeof value !== "number" || (!allowInfinity && !Number.isFinite(value))) {
-    throw "could not determine some of the font metrics";
+    throw (
+      "could not determine some of the character metrics: " +
+      `'${char}' (${getUnicodeHex(char)}). Please use another font`
+    );
   }
   return value;
 }
 
-export function positionSubs(
-  subs: VideoSubs,
-  font: Font,
-  configParams: ConfigParams,
-  resX: number,
-  resY: number,
-) {
-  const params = configParams.positioning;
-  const styles = configParams.styles;
-
-  const ascent = verifyMetricValue(
-    Number.isFinite(font["OS/2"].winAscent)
-      ? font["OS/2"].winAscent
-      : font.ascent
-  );
-  const descent = verifyMetricValue(
-    Number.isFinite(font["OS/2"].winDescent)
-      ? -font["OS/2"].winDescent
-      : font.descent
-  );
-
-  const fontMetricHeight = ascent - descent;
-
-  /**
-   * normally font size includes the top and bottom padding but those are going
-   * to be stripped and handled by line_distance and furigana_offset instead,
-   * so the font size will be adjusted here to match the fontsize value from the config
-   */
-  const charSizes: number[] = subs.getCharset().split("")
-    .map(char => font.layout(char).bbox.height)
-    .filter(n => Number.isFinite(n));
-  if (!charSizes.length) {
-    throw "could not determine some of the font metrics";
-  }
-  let charSizeAvg = charSizes.reduce((sum, n) => sum + n, 0) / charSizes.length;
-  // exclude outliers
-  const deviation = (n: number) => Math.abs((n - charSizeAvg) / charSizeAvg);
-  charSizes.sort((a, b) => deviation(a) - deviation(b));
-  const includeValuesCount = Math.ceil(charSizes.length * 0.8);
-  charSizeAvg = charSizes
-    .slice(0, includeValuesCount)
-    .reduce((sum, n) => sum + n, 0) / includeValuesCount;
-
-  const percentDiff = (fontMetricHeight - charSizeAvg) / charSizeAvg;
-  styles.text.fontsize *= 1 + percentDiff;
-  styles.furigana.fontsize *= 1 + percentDiff;
-
+function positionSubs(subs: VideoSubs) {
+  const params = subs.params.positioning;
+  const styles = subs.params.styles;
 
   const textRatio = fontMetricHeight / styles.text.fontsize;
   const furiganaRatio = fontMetricHeight / styles.furigana.fontsize;
-
 
   function shiftChunk(
     chunk: Chunk,
@@ -100,15 +66,6 @@ export function positionSubs(
     shiftTillEndOfLine(px, line[0], line);
   }
 
-  function measureTextWidth(str: string, ratio: number): number {
-    let width = 0;
-    for (const char of str) {
-      const run = font.layout(char);
-      width += verifyMetricValue(run.advanceWidth) / ratio;
-    }
-    return width;
-  }
-
   function lineHasFurigana(line: Line) {
     for (const chunk of line) {
       if (chunk.furigana) {
@@ -118,26 +75,32 @@ export function positionSubs(
     return false;
   }
 
-  function getLinePadding(line: Line) {
-    const left = verifyMetricValue(font.layout(line[0].text[0]).bbox.minX) / textRatio;
-
-    const lastChunkText = line[line.length - 1].text;
-    const lastChar = lastChunkText[lastChunkText.length - 1];
+  function getSidePadding(str: string, ratio: number) {
+    const char = str[0];
+    const left = verifyMetricValue(font.layout(char).bbox.minX, char) / ratio;
+    const lastChar = str[str.length - 1];
     const run = font.layout(lastChar);
     const right = (
-      verifyMetricValue(run.advanceWidth) -
-      verifyMetricValue(run.bbox.maxX)
-    ) / textRatio;
-
+      verifyMetricValue(run.advanceWidth, lastChar) -
+      verifyMetricValue(run.bbox.maxX, lastChar)
+    ) / ratio;
+    return { left, right };
+  }
+  function getLinePadding(line: Line) {
+    const { left, right } = getSidePadding(
+      line[0].text + line[line.length - 1].text,
+      textRatio
+    );
     const text: VerticalPadding = { top: Infinity, bottom: Infinity };
     for (const chunk of line) {
       for (const char of chunk.text) {
-        const top = (
-          ascent - verifyMetricValue(font.layout(char).bbox.maxY, true)
-        ) / textRatio;
-        const bottom = (
-          verifyMetricValue(font.layout(char).bbox.minY, true) - descent
-        ) / textRatio;
+        const bbox = font.layout(char).bbox;
+        const top =
+          (ascent - verifyMetricValue(bbox.maxY, char, true))
+          / textRatio;
+        const bottom =
+          (verifyMetricValue(bbox.minY, char, true) - descent)
+          / textRatio;
         if (top < text.top) {
           text.top = top;
         }
@@ -146,19 +109,19 @@ export function positionSubs(
         }
       }
     }
-
     let furi: VerticalPadding | null = null;
     if (lineHasFurigana(line)) {
       furi = { top: Infinity, bottom: Infinity };
       for (const chunk of line) {
         if (chunk.furigana) {
           for (const char of chunk.furigana) {
-            const top = (
-              ascent - verifyMetricValue(font.layout(char).bbox.maxY, true)
-            ) / furiganaRatio;
-            const bottom = (
-              verifyMetricValue(font.layout(char).bbox.minY, true) - descent
-            ) / furiganaRatio;
+            const bbox = font.layout(char).bbox;
+            const top =
+              (ascent - verifyMetricValue(bbox.maxY, char, true))
+              / furiganaRatio;
+            const bottom =
+              (verifyMetricValue(bbox.minY, char, true) - descent)
+              / furiganaRatio;
             if (top < furi.top) {
               furi.top = top;
             }
@@ -169,24 +132,27 @@ export function positionSubs(
         }
       }
     }
-
     return { left, right, text, furi };
   }
-  function getLineWidth(line: Line, nonPositioned?: boolean) {
+
+  function measureTextWidth(str: string, ratio: number): number {
     let width = 0;
-    if (nonPositioned) {
-      for (const chunk of line) {
-        width += measureTextWidth(chunk.text, textRatio);
-      }
-    } else {
-      const start = line[0].position.text.x;
-      const lastChunk = line[line.length - 1];
-      const end =
-        lastChunk.position.text.x + measureTextWidth(lastChunk.text, textRatio);
-      width = end - start;
+    for (const char of str) {
+      const run = font.layout(char);
+      width += verifyMetricValue(run.advanceWidth, char) / ratio;
     }
-    const { left, right } = getLinePadding(line);
-    return width - left - right;
+    return width;
+  }
+
+  function getLineWidth(line: Line) {
+    const lastChunk = line[line.length - 1];
+    const { left, right } = getSidePadding(line[0].text + lastChunk.text, textRatio);
+    const start = line[0].position.text.x + left;
+    const end =
+      lastChunk.position.text.x
+      + measureTextWidth(lastChunk.text, textRatio)
+      - right;
+    return end - start;
   }
   function getWidestLine(lines: Line[]) {
     let widestLine = lines[0];
@@ -381,19 +347,17 @@ export function positionSubs(
   /**
    * add margin
    */
-  if (params.margin) {
-    if ([1, 4, 7].includes(params.position)) {
-      shiftAllDialogues(params.margin, "x");
-    }
-    if ([3, 6, 9].includes(params.position)) {
-      shiftAllDialogues(-params.margin, "x");
-    }
-    if ([7, 8, 9].includes(params.position)) {
-      shiftAllDialogues(params.margin, "y");
-    }
-    if ([1, 2, 3].includes(params.position)) {
-      shiftAllDialogues(-params.margin, "y");
-    }
+  if ([1, 4, 7].includes(params.position)) {
+    shiftAllDialogues(params.margin, "x");
+  }
+  if ([3, 6, 9].includes(params.position)) {
+    shiftAllDialogues(-params.margin, "x");
+  }
+  if ([7, 8, 9].includes(params.position)) {
+    shiftAllDialogues(params.margin, "y");
+  }
+  if ([1, 2, 3].includes(params.position)) {
+    shiftAllDialogues(-params.margin, "y");
   }
 
   /**
@@ -432,15 +396,16 @@ export function positionSubs(
 
       const topLinePadding = getLinePadding(dialogue.lines[0])
       const widestLine = getWidestLine(dialogue.lines);
-      let x = widestLine.line[0].position.text.x + getLinePadding(widestLine.line).left
+      let x = widestLine.line[0].position.text.x + getLinePadding(widestLine.line).left;
       let w = 0;
 
       for (const line of dialogue.lines) {
         for (const chunk of line) {
           if (chunk.furigana) {
+            const char = chunk.furigana[0];
             const furiX =
               chunk.position.furigana.x +
-              verifyMetricValue(font.layout(chunk.furigana).bbox.minX, true) / furiganaRatio;
+              verifyMetricValue(font.layout(char).bbox.minX, char) / furiganaRatio;
             if (furiX < x) {
               w += x - furiX;
               x = furiX;
@@ -470,13 +435,10 @@ export function positionSubs(
         for (let i = line.length - 1; i >= 0; i--) {
           const chunk = line[i];
           if (chunk.furigana) {
-            const { maxX, width } = font.layout(chunk.furigana).bbox;
-            verifyMetricValue(maxX);
-            verifyMetricValue(width);
             const furiEndX =
-              chunk.position.furigana.x +
-              width / furiganaRatio -
-              (width - maxX) / furiganaRatio;
+              chunk.position.furigana.x
+              + measureTextWidth(chunk.furigana, furiganaRatio)
+              - getSidePadding(chunk.furigana, furiganaRatio).right;
             const currentRightBorderPos = x + w;
             if (furiEndX > currentRightBorderPos) {
               w += furiEndX - currentRightBorderPos;
@@ -515,5 +477,56 @@ export function positionSubs(
           `l ${x + w} ${y} ${x + w} ${y + h} ${x} ${y + h} ${x} ${y}`;
       }
     }
+  }
+}
+
+export function processSubs(
+  subs: VideoSubs,
+  _font: Font,
+  _resX: number,
+  _resY: number,
+) {
+  font = _font;
+  resX = _resX;
+  resY = _resY;
+  ascent = Number.isFinite(font["OS/2"].winAscent)
+    ? font["OS/2"].winAscent
+    : font.ascent;
+  descent = Number.isFinite(font["OS/2"].winDescent)
+    ? -font["OS/2"].winDescent
+    : font.descent;
+  if (!Number.isFinite(ascent) || !Number.isFinite(descent)) {
+    throw new AppError(
+      "could not determine the ascent and descent of the font. " +
+      "Please use another font"
+    );
+  }
+  fontMetricHeight = ascent - descent;
+  /**
+   * normally font size includes the top and bottom padding but those are going
+   * to be stripped and handled by line_distance and furigana_offset instead,
+   * so the font size will be adjusted here to match the fontsize value from the config
+   */
+  const charSizes: number[] = subs.getCharset().split("")
+    .map(char => font.layout(char).bbox.height)
+    .filter(n => Number.isFinite(n));
+  if (!charSizes.length) {
+    throw "could not determine some of the font metrics";
+  }
+  let charSizeAvg = charSizes.reduce((sum, n) => sum + n, 0) / charSizes.length;
+  // exclude outliers
+  const deviation = (n: number) => Math.abs((n - charSizeAvg) / charSizeAvg);
+  charSizes.sort((a, b) => deviation(a) - deviation(b));
+  const includeValuesCount = Math.ceil(charSizes.length * 0.8);
+  charSizeAvg = charSizes
+    .slice(0, includeValuesCount)
+    .reduce((sum, n) => sum + n, 0) / includeValuesCount;
+
+  const percentDiff = (fontMetricHeight - charSizeAvg) / charSizeAvg;
+  subs.params.styles.text.fontsize *= 1 + percentDiff;
+  subs.params.styles.furigana.fontsize *= 1 + percentDiff;
+
+  for (const subsInstance of subs.getInstanesByPosition()) {
+    positionSubs(subsInstance);
   }
 }

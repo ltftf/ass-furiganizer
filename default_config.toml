@@ -5,7 +5,7 @@ position = 2                     # text position on the screen (Numpad style, e.
 align = "auto"                   # text alignment ('start', 'center', 'end', or 'auto')
 furigana_offset = 8              # distance between main text and furigana in px
 line_distance = 22               # distance between lines in px
-margin = 90                      # text offset from the border in px
+margin = 50                      # text offset from the border in px
 shift = [0, 0]                   # shift text by [x, y] axes in px
 
 [styles.text]

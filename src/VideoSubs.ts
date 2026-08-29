@@ -8,8 +8,37 @@ import { processAssTime, timeToSeconds } from "./time.js";
 
 export class VideoSubs {
   public dialogues: Dialogue[] = [];
+  public params!: ConfigParams;
+
+  public getInstanesByPosition() {
+    const instances: VideoSubs[] = [];
+    const positions: number[] = [this.params.positioning.position];
+    for (const dialogue of this.dialogues) {
+      if (dialogue.position && !positions.includes(dialogue.position)) {
+        positions.push(dialogue.position);
+      }
+    }
+    for (const position of positions) {
+      const instance = new VideoSubs();
+      for (const dialogue of this.dialogues) {
+        if (
+          !dialogue.position && position === this.params.positioning.position ||
+          dialogue.position === position
+        ) {
+          instance.dialogues.push(dialogue);
+        }
+      }
+      const params = structuredClone(this.params);
+      params.positioning.position = position;
+      instance.params = params;
+      instances.push(instance);
+    }
+    return instances;
+  }
+
 
   public async createFromInputFile(inputFile: string, params: ConfigParams) {
+    this.params = params;
     const data = await readFile(inputFile, { encoding: "utf-8" });
     if (inputFile.endsWith(".srt")) {
       const parsedSrt = fromSrt(data);
@@ -20,7 +49,6 @@ export class VideoSubs {
         const lines = dialogue.lines;
         for (let i = 0; i < lines.length; i++) {
           lines[i] = lines[i].replace(/<\/?(?:b|i|u|font[^>]*)>/g, "");
-          lines[i] = lines[i].replace(/{\\an?\d{1,2}}/g, "");
           for (const [find, replace] of params.substitute.text) {
             if (find.startsWith("U+")) {
               lines[i] = lines[i].replace(
@@ -97,12 +125,26 @@ export class VideoSubs {
       }
     } else {
       let split = data.split(
-        /Dialogue \d+ \((\d{1,3}:\d{2}:\d{2}\.\d{2} - \d{1,3}:\d{2}:\d{2}\.\d{2})\):/
-      ).slice(1);
+        /Dialogue \d+ \((\d{1,3}:\d{2}:\d{2}\.\d{2} - \d{1,3}:\d{2}:\d{2}\.\d{2})\)(?: \[position: (\d)\])?:/
+      );
+      const leadingText = split[0];
+      const incorrectFormatting = (line: number) => `incorrect formatting at line ${line}`;
+      if (leadingText.trim()) {
+        const lineCount = (str: string) => str.split(/\r?\n/).length;
+        throw incorrectFormatting(lineCount(leadingText) - lineCount(leadingText.trimStart()) + 1);
+      }
+      split = split.slice(1);
       let json = "{";
-      for (let i = 0; i < split.length; i += 2) {
-        json += "'" + split[i] + "':";
-        json += "[" + split[i + 1] + "],";
+      for (let i = 0; i < split.length; i += 3) {
+        const time = split[i];
+        const position = split[i + 1];
+        const data = split[i + 2];
+        let dialogueKey = time;
+        if (position && position !== "0") {
+          dialogueKey += " - " + position;
+        }
+        json += "'" + dialogueKey + "':";
+        json += "[" + data + "],";
       }
       json += "}";
       let subs: Blueprint;
@@ -110,22 +152,23 @@ export class VideoSubs {
         subs = json5.parse(json);
       } catch (e: any) {
         if (e.lineNumber) {
-          throw "incorrect formatting at line " + e.lineNumber;
+          throw incorrectFormatting(e.lineNumber);
         } else {
           throw e.message;
         }
       }
-      const times = Object.keys(subs);
-      for (let i = 0; i < times.length; i++) {
-        const time = times[i];
-        const [start, end] = time.split(" - ");
+      const keys = Object.keys(subs);
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const [startTime, endTime, position] = key.split(" - ");
         const dialogue: Dialogue = {
-          startTime: processAssTime(start),
-          endTime: processAssTime(end),
+          startTime: processAssTime(startTime),
+          endTime: processAssTime(endTime),
           lines: [],
           opaqueBox: "",
+          position: position ? parseInt(position) : undefined,
         }
-        const lines = subs[time];
+        const lines = subs[key];
         if (
           !lines ||
           !Array.isArray(lines) ||
@@ -170,7 +213,11 @@ export class VideoSubs {
     let bp = "";
     for (let i = 0; i < this.dialogues.length; i++) {
       const dialogue = this.dialogues[i];
-      const dialogueHeader = `Dialogue ${i + 1} (${dialogue.startTime} - ${dialogue.endTime}):`;
+      let dialogueHeader = `Dialogue ${i + 1} (${dialogue.startTime} - ${dialogue.endTime})`;
+      if (dialogue.position) {
+        dialogueHeader += ` [position: ${dialogue.position}]`;
+      }
+      dialogueHeader += ":";
       const lines: BpLine[] = [];
       for (const line of dialogue.lines) {
         const chunks: BpChunk[] = [];
@@ -186,7 +233,7 @@ export class VideoSubs {
       }
     }
     bp = bp.replace(/^\s+text: '.*$/gm, " ".repeat(4) + "$&");
-    return bp.trim();
+    return "\ufeff" + bp.trim();
   }
 
   public getCharset(textOnly?: boolean) {
