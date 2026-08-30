@@ -351,7 +351,7 @@ Description: suffix to add.
 
 Type: boolean
 
-Description: you'll be prompted for options if a variable font or font collection is provided. If set to false the default variation or the first font from the collection will be used.
+Description: you may be prompted for some options (variable font, font collection, `use_inline_furigana`). 
 
 ### substitute
 
