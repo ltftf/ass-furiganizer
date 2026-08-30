@@ -50,6 +50,8 @@ A CLI utility to easily generate beautiful Japanese subtitles with furigana.
 	+ [`miscellaneous`](#miscellaneous)
 		* [`output_dir`](#output_dir)
 		* [`analyzer`](#analyzer)
+		* [`remove_inline_furigana`](#remove_inline_furigana)
+		* [`use_inline_furigana`](#use_inline_furigana)
 		* [`add_suffix`](#add_suffix)
 		* [`suffix`](#suffix)
 		* [`interactive`](#interactive)
@@ -75,10 +77,10 @@ A CLI utility to easily generate beautiful Japanese subtitles with furigana.
 
 ## Installation
 
-Install globally:
+First install `Node.js` with the `npm` package manager if you haven't already then:
 
 ```shell
-npm i -g ass-furiganizer
+npm install --global ass-furiganizer
 ```
 
 Run:
@@ -323,7 +325,15 @@ Description: directory to save generated subtitles to. The directory where your 
 
 Type: string
 
-Description: choose the morphological analyzer. Can be `kuromoji` or `mecab`. `kuromoji` does not require any configuration. If you want to use `mecab` you need to install it on your machine and make sure it's in the PATH.
+Description: choose the morphological analyzer. Can be `kuromoji` or `mecab`. `kuromoji` works without any configuration. If you want to use `mecab` with a custom dictionary you need to install it on your machine and make sure it's in the PATH.
+
+#### remove_inline_furigana
+
+If the reading is specified in parenthesis following the kanji, remove it if it matches the generated furigana.
+
+#### use_inline_furigana
+
+Remove the kanji reading in parenthesis and use it instead of the generated furigana. This works when the analyzer fractionates the word correctly. You'll be prompted to choose the words for which this will be applied.
 
 #### add_suffix
 

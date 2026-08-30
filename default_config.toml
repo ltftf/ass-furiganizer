@@ -58,7 +58,8 @@ consistent_font_size = false     # normalize font size for different video resol
 [miscellaneous]
 output_dir = ""                  # the directory where your player looks for subs can be specified here
 analyzer = "kuromoji"            # 'kuromoji' or 'mecab'
-remove_inline_furigana = true    # remove parenthesized kanji reading if it matches the generated furigana
+remove_inline_furigana = true    # remove the parenthesized kanji reading if it matches the generated furigana
+use_inline_furigana = false      # remove the parenthesized kanji reading and use it as furigana
 add_suffix = false               # add suffix to the script name: <video_name>.<suffix>.ass
 suffix = "ja"
 interactive = true               # prompt when a variable font or font collection is used

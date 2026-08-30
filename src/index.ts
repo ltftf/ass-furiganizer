@@ -427,7 +427,7 @@ try {
 
     const subs: VideoSubs = new VideoSubs();
     try {
-      await subs.createFromInputFile(inputSubFile, config_params);
+      await subs.createFromInputFile(inputSubFile, config_params, interactive);
     } catch (e: any) {
       printFail(e, inputSubName);
       continue;

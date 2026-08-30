@@ -5,6 +5,9 @@ import { readFile } from "fs/promises";
 import json5 from "json5";
 import { EOL } from "os";
 import { processAssTime, timeToSeconds } from "./time.js";
+import { checkbox } from "@inquirer/prompts";
+import chalk from "chalk";
+import { warning } from "./log.js";
 
 export class VideoSubs {
   public dialogues: Dialogue[] = [];
@@ -37,7 +40,11 @@ export class VideoSubs {
   }
 
 
-  public async createFromInputFile(inputFile: string, params: ConfigParams) {
+  public async createFromInputFile(
+    inputFile: string,
+    params: ConfigParams,
+    interactive: boolean
+  ) {
     this.params = params;
     const data = await readFile(inputFile, { encoding: "utf-8" });
     if (inputFile.endsWith(".srt")) {
@@ -78,6 +85,7 @@ export class VideoSubs {
 
       this.dialogues = await furiganize(parsedSrt);
 
+      const useInlineFurigana: { message: string, callback: () => void }[] = [];
       for (let di = 0; di < this.dialogues.length; di++) {
         const dialogue = this.dialogues[di];
         for (const line of dialogue.lines) {
@@ -89,14 +97,37 @@ export class VideoSubs {
                 chunk.furigana = replace;
               }
             }
-            if (params.miscellaneous.remove_inline_furigana && ci < line.length - 1) {
-              const chunkNext = line[ci + 1];
+            if (ci < line.length - 1) {
               const furigana = chunk.furigana;
               if (furigana) {
-                chunkNext.text = chunkNext.text.replace(
-                  new RegExp(`^\\s*\\(\\s*${furigana}\\s*\\)`),
-                  ""
-                );
+                const chunkNext = line[ci + 1];
+                if (params.miscellaneous.remove_inline_furigana) {
+                  chunkNext.text = chunkNext.text.replace(
+                    new RegExp(`^\\s*[(（]\\s*${furigana}\\s*[)）]`),
+                    ""
+                  );
+                }
+                if (params.miscellaneous.use_inline_furigana) {
+                  const inlineFurigana = chunkNext.text.match(/^[(（]([^)）]+)[)）]/);
+                  if (inlineFurigana) {
+                    useInlineFurigana.push({
+                      message: line
+                        .map(chunk => chunk.text)
+                        .join("")
+                        .replace(
+                          chunk.text + inlineFurigana[0],
+                          chalk.level ? chalk.red("$&") : " < $& > "
+                        ),
+                      callback: () => {
+                        chunk.furigana = inlineFurigana[1];
+                        chunkNext.text = chunkNext.text.replace(
+                          inlineFurigana[0],
+                          ""
+                        )
+                      }
+                    });
+                  }
+                }
               }
             }
           }
@@ -121,6 +152,36 @@ export class VideoSubs {
               );
             }
           }
+        }
+      }
+      if (useInlineFurigana.length) {
+        if (interactive) {
+          const callbacks = await checkbox({
+            message: "use_inline_furigana: Select furigana to use. Unselected will remain as is",
+            choices: useInlineFurigana.map(({ message, callback }) => ({
+              name: message,
+              value: callback,
+            })),
+            prefix: "",
+            theme: {
+              icon: {
+                cursor: ">",
+                checked: " ◉ ",
+                unchecked: " ◯ ",
+              },
+              prefix: "",
+              style: {
+                highlight: (t: string) => chalk.dim(t),
+                answer: () => "",
+              },
+            },
+            shortcuts: { invert: null }
+          });
+          for (const cb of callbacks) {
+            cb();
+          }
+        } else {
+          warning("use_inline_furigana: interactivity is off. Skipping...");
         }
       }
     } else {

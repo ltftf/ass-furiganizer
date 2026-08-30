@@ -221,8 +221,15 @@ export function verifyConfigParams(params: ConfigParams, configName: string, par
     params.miscellaneous.analyzer = "kuromoji";
   }
   if (notUndefinedOr("boolean", params.miscellaneous.remove_inline_furigana)) {
-    warning("'remove_inline_furigana': expected a boolean", configName)
+    warning("'remove_inline_furigana': expected a boolean. Using: true", configName)
     params.miscellaneous.remove_inline_furigana = true;
+  }
+  if (params.miscellaneous.remove_inline_furigana === undefined) {
+    params.miscellaneous.remove_inline_furigana = true;
+  }
+  if (notUndefinedOr("boolean", params.miscellaneous.use_inline_furigana)) {
+    warning("'use_inline_furigana': expected a boolean", configName)
+    params.miscellaneous.use_inline_furigana = false;
   }
   if (notUndefinedOr("boolean", params.miscellaneous.add_suffix)) {
     warning("'add_suffix': expected a boolean", configName)
@@ -239,10 +246,8 @@ export function verifyConfigParams(params: ConfigParams, configName: string, par
     warning("'interactive': expected a boolean", configName)
     params.miscellaneous.interactive = true;
   }
-  for (const opt of ["interactive", "remove_inline_furigana"]) {
-    if (params.miscellaneous[opt] === undefined) {
-      params.miscellaneous[opt] = true;
-    }
+  if (params.miscellaneous.interactive === undefined) {
+    params.miscellaneous.interactive = true;
   }
 
   if (!Object.keys(params).includes("substitute")) {
