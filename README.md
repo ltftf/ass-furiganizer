@@ -329,11 +329,15 @@ Description: choose the morphological analyzer. Can be `kuromoji` or `mecab`. `k
 
 #### remove_inline_furigana
 
-If the reading is specified in parenthesis following the kanji, remove it if it matches the generated furigana.
+Type: boolean
+
+Description: if the kanji reading is specified in parenthesis following the kanji, remove it if it matches the generated furigana.
 
 #### use_inline_furigana
 
-Remove the kanji reading in parenthesis and use it instead of the generated furigana. This works when the analyzer fractionates the word correctly. You'll be prompted to choose the words for which this will be applied.
+Type: boolean
+
+Description: remove the kanji reading in parenthesis and use it instead of the generated furigana. This works when the analyzer fractionates the word correctly. You'll be prompted to choose the words for which this will be applied. Set [`interactive`](#interactive) to false to always apply everything.
 
 #### add_suffix
 

@@ -85,7 +85,7 @@ export class VideoSubs {
 
       this.dialogues = await furiganize(parsedSrt);
 
-      const useInlineFurigana: { message: string, callback: () => void }[] = [];
+      const useInlineFurigana: { line: string, callback: () => void }[] = [];
       for (let di = 0; di < this.dialogues.length; di++) {
         const dialogue = this.dialogues[di];
         for (const line of dialogue.lines) {
@@ -111,7 +111,7 @@ export class VideoSubs {
                   const inlineFurigana = chunkNext.text.match(/^[(（]([^)）]+)[)）]/);
                   if (inlineFurigana) {
                     useInlineFurigana.push({
-                      message: line
+                      line: line
                         .map(chunk => chunk.text)
                         .join("")
                         .replace(
@@ -158,8 +158,8 @@ export class VideoSubs {
         if (interactive) {
           const callbacks = await checkbox({
             message: "use_inline_furigana: Select furigana to use. Unselected will remain as is",
-            choices: useInlineFurigana.map(({ message, callback }) => ({
-              name: message,
+            choices: useInlineFurigana.map(({ line, callback }) => ({
+              name: line,
               value: callback,
             })),
             prefix: "",
@@ -181,7 +181,11 @@ export class VideoSubs {
             cb();
           }
         } else {
-          warning("use_inline_furigana: interactivity is off. Skipping...");
+          warning("use_inline_furigana: applying changes to these lines:");
+          for (const { line, callback } of useInlineFurigana) {
+            console.log(` • ${line}`);
+            callback();
+          }
         }
       }
     } else {
