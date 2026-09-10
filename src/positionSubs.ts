@@ -212,8 +212,27 @@ function positionSubs(subs: VideoSubs) {
         const textWidth = measureTextWidth(chunk.text, textRatio);
         if (chunk.furigana) {
           furiganaAdded = true;
-          const furiganaWidth = measureTextWidth(chunk.furigana, furiganaRatio);
-          chunk.position.furigana.x = xPos + (textWidth - furiganaWidth) / 2;
+          const {
+            left: textLeftPad,
+            right: textRightPad
+          } = getSidePadding(chunk.text, textRatio);
+          const {
+            left: furiganaLeftPad,
+            right: furiganaRightPad
+          } = getSidePadding(chunk.furigana, furiganaRatio);
+          const furiganaWidth =
+            measureTextWidth(chunk.furigana, furiganaRatio)
+            - furiganaLeftPad
+            - furiganaRightPad;
+          chunk.position.furigana.x = xPos
+            + textLeftPad
+            - furiganaLeftPad
+            + (
+              textWidth
+              - textLeftPad
+              - textRightPad
+              - furiganaWidth
+            ) / 2;
           chunk.position.furigana.y = yPos - styles.furigana.fontsize -
             params.furigana_offset + padding.text.top + padding.furi!.bottom;
         }
