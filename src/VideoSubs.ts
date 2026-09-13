@@ -5,9 +5,7 @@ import { readFile } from "fs/promises";
 import json5 from "json5";
 import { EOL } from "os";
 import { processAssTime, timeToSeconds } from "./time.js";
-import { checkbox } from "@inquirer/prompts";
 import chalk from "chalk";
-import { warning } from "./log.js";
 
 export class VideoSubs {
   public dialogues: Dialogue[] = [];
@@ -40,11 +38,7 @@ export class VideoSubs {
   }
 
 
-  public async createFromInputFile(
-    inputFile: string,
-    params: ConfigParams,
-    interactive: boolean
-  ) {
+  public async createFromInputFile(inputFile: string, params: ConfigParams) {
     this.params = params;
     const data = await readFile(inputFile, { encoding: "utf-8" });
     if (inputFile.endsWith(".srt")) {
@@ -85,7 +79,7 @@ export class VideoSubs {
 
       this.dialogues = await furiganize(parsedSrt);
 
-      const useInlineFurigana: { line: string, callback: () => void }[] = [];
+      const useInlineFuriganaLines: string[] = [];
       for (let di = 0; di < this.dialogues.length; di++) {
         const dialogue = this.dialogues[di];
         for (const line of dialogue.lines) {
@@ -108,24 +102,18 @@ export class VideoSubs {
                   );
                 }
                 if (params.miscellaneous.use_inline_furigana) {
-                  const inlineFurigana = chunkNext.text.match(/^[(（]([^)）]+)[)）]/);
+                  const inlineFurigana = chunkNext.text.match(/^\(([^)]+)\)/);
                   if (inlineFurigana) {
-                    useInlineFurigana.push({
-                      line: line
-                        .map(chunk => chunk.text)
-                        .join("")
-                        .replace(
-                          chunk.text + inlineFurigana[0],
-                          chalk.level ? chalk.red("$&") : " < $& > "
-                        ),
-                      callback: () => {
-                        chunk.furigana = inlineFurigana[1];
-                        chunkNext.text = chunkNext.text.replace(
-                          inlineFurigana[0],
-                          ""
-                        )
-                      }
-                    });
+                    useInlineFuriganaLines.push(`${dialogue.startTime}: ` + line
+                      .map(chunk => chunk.text)
+                      .join("")
+                      .replace(
+                        chunk.text + inlineFurigana[0],
+                        chalk.level ? chalk.red("$&") : " < $& > "
+                      )
+                    );
+                    chunk.furigana = inlineFurigana[1];
+                    chunkNext.text = chunkNext.text.replace(inlineFurigana[0], "");
                   }
                 }
               }
@@ -154,38 +142,10 @@ export class VideoSubs {
           }
         }
       }
-      if (useInlineFurigana.length) {
-        if (interactive) {
-          const callbacks = await checkbox({
-            message: "use_inline_furigana: Select furigana to use. Unselected will remain as is",
-            choices: useInlineFurigana.map(({ line, callback }) => ({
-              name: line,
-              value: callback,
-            })),
-            prefix: "",
-            theme: {
-              icon: {
-                cursor: ">",
-                checked: " ◉ ",
-                unchecked: " ◯ ",
-              },
-              prefix: "",
-              style: {
-                highlight: (t: string) => chalk.dim(t),
-                answer: () => "",
-              },
-            },
-            shortcuts: { invert: null }
-          });
-          for (const cb of callbacks) {
-            cb();
-          }
-        } else {
-          warning("use_inline_furigana: applying changes to these lines:");
-          for (const { line, callback } of useInlineFurigana) {
-            console.log(` • ${line}`);
-            callback();
-          }
+      if (useInlineFuriganaLines.length) {
+        console.log("use_inline_furigana: applying changes to these lines:");
+        for (const line of useInlineFuriganaLines) {
+          console.log(` • ${line}`);
         }
       }
     } else {

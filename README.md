@@ -331,13 +331,13 @@ Description: choose the morphological analyzer. Can be `kuromoji` or `mecab`. `k
 
 Type: boolean
 
-Description: if the kanji reading is specified in parenthesis following the kanji, remove it if it matches the generated furigana.
+Description: if the kanji reading is specified in parentheses following the kanji, remove it if it matches the generated furigana.
 
 #### use_inline_furigana
 
 Type: boolean
 
-Description: remove the kanji reading in parenthesis and use it instead of the generated furigana. This works when the analyzer fractionates the word correctly. You'll be prompted to choose the words for which this will be applied. Set [`interactive`](#interactive) to false to always apply everything.
+Description: remove the kanji reading in parentheses and use it instead of the generated furigana. This works when the analyzer fractionates the word correctly. The changed lines will be logged to the console.
 
 #### add_suffix
 
@@ -355,7 +355,7 @@ Description: suffix to add.
 
 Type: boolean
 
-Description: you may be prompted for some options (variable font, font collection, `use_inline_furigana`). 
+Description: you may be prompted for some options (variable font, font collection). 
 
 ### substitute
 
