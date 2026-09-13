@@ -22,7 +22,15 @@ export function verifyConfigParams(params: ConfigParams, configName: string, par
   function checkKeys(paramKeys: any, refKeys: any) {
     for (const key of Object.keys(paramKeys)) {
       if (!Object.keys(refKeys).includes(key)) {
-        throw new AppError(`unexpected option: '${path.concat(key).join(".")}'`, configName);
+        if (key === "add_suffix") {
+          warning(
+            "'add_suffix' option is removed. Set 'suffix' to an empty string " +
+            "to not add a suffix",
+            configName
+          );
+        } else {
+          throw new AppError(`unexpected option: '${path.concat(key).join(".")}'`, configName);
+        }
       }
     }
   }
@@ -231,16 +239,9 @@ export function verifyConfigParams(params: ConfigParams, configName: string, par
     warning("'use_inline_furigana': expected a boolean", configName)
     params.miscellaneous.use_inline_furigana = false;
   }
-  if (notUndefinedOr("boolean", params.miscellaneous.add_suffix)) {
-    warning("'add_suffix': expected a boolean", configName)
-    params.miscellaneous.add_suffix = false;
-  }
-  if (
-    params.miscellaneous.add_suffix &&
-    (!params.miscellaneous.suffix || typeof params.miscellaneous.suffix !== "string")
-  ) {
-    warning("'suffix': add_suffix is true, expected a string", configName)
-    params.miscellaneous.add_suffix = false;
+  if (notUndefinedOr("string", params.miscellaneous.suffix)) {
+    warning("'suffix': expected a string", configName)
+    params.miscellaneous.suffix = "";
   }
   if (notUndefinedOr("boolean", params.miscellaneous.interactive)) {
     warning("'interactive': expected a boolean", configName)

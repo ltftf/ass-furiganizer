@@ -90,7 +90,6 @@ export interface ConfigParams {
     analyzer: "kuromoji" | "mecab";
     remove_inline_furigana: boolean;
     use_inline_furigana: boolean | undefined;
-    add_suffix: boolean | undefined;
     suffix: string | undefined;
     interactive: boolean;
   };

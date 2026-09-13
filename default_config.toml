@@ -60,8 +60,7 @@ output_dir = ""                  # the directory where your player looks for sub
 analyzer = "kuromoji"            # 'kuromoji' or 'mecab'
 remove_inline_furigana = true    # remove the parenthesized kanji reading if it matches the generated furigana
 use_inline_furigana = false      # remove the parenthesized kanji reading and use it as furigana
-add_suffix = false               # add suffix to the script name: <video_name>.<suffix>.ass
-suffix = "ja"
+suffix = ""                      # add suffix to the file name: <video_name>.<suffix>.ass (e.g., 'ja')
 interactive = true               # prompt for some options
 
 [substitute]

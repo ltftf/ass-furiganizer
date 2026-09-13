@@ -385,13 +385,9 @@ try {
     const inputSubName = basename(inputSubFile);
     const inputVideoFile = resolve(inputVideos[i]);
     const outputPath = outputDir ?? dirname(inputVideoFile);
-    const extension =
-      config_params.miscellaneous.add_suffix ?
-        `${config_params.miscellaneous.suffix}.ass` :
-        "ass";
-    const outputSubName =
-      outputFileName ??
-      setExtension(basename(inputVideoFile), extension);
+    const suffix = config_params.miscellaneous.suffix;
+    const ext = suffix ? `${suffix}.ass` : "ass";
+    const outputSubName = outputFileName ?? setExtension(basename(inputVideoFile), ext);
     const outputSubFile = join(outputPath, outputSubName);
 
     function printFail(err: string | Error, prefix: string) {
