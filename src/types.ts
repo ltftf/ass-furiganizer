@@ -137,3 +137,16 @@ type Join<T extends string[], D extends string> =
   F extends string ?
   `${F}${D}${Join<Extract<R, string[]>, D>}` : never : string;
 export type Param = Join<PathsToStringProps<ConfigParams>, ".">
+
+export interface MatroskaData {
+  tracks: {
+    codec: string,
+    id: number,
+    properties: {
+      language: string,
+      language_ietf: string,
+    },
+  }[],
+  warnings?: string[],
+  errors?: string[],
+}

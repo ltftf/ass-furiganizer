@@ -1,6 +1,6 @@
+import { AppError } from "./customErrors.js";
 import { warning } from "./log.js";
 import { ConfigParams, Substitute } from "./types.js";
-import { AppError } from "./utils.js";
 
 export function verifyConfigParams(params: ConfigParams, configName: string, paramsRef: ConfigParams) {
   if (!params || !Object.entries(params).length) {

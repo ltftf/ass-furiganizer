@@ -11,6 +11,9 @@ export function style(text: string, color?: keyof ChalkInstance, bold?: boolean)
   return style(text);
 }
 
+export function info(message: string) {
+  console.log(`${style("info", "blue")}: ${message}...`);
+}
 export function warning(message: string, prefix?: string) {
   let text = "";
   if (prefix) {

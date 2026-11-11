@@ -2,7 +2,7 @@
 import { Option, program } from "commander";
 import fs from "fs/promises";
 import { basename, dirname, join, resolve, isAbsolute } from "path";
-import { AppError, getChar, getUnicodeDecimal, getUnicodeHex, setExtension } from "./utils.js";
+import { getChar, getUnicodeDecimal, getUnicodeHex, setExtension } from "./utils.js";
 import { getVideoResolution } from "./getVideoData.js";
 import { CliParams, ConfigParams, VariationAxes } from "./types.js";
 import { create, Font, FontCollection } from "fontkit";
@@ -10,7 +10,7 @@ import { createFont } from 'fonteditor-core';
 import { setAnalyzer } from "./kuroshiro.js";
 import { processSubs } from "./positionSubs.js";
 import { VideoSubs } from "./VideoSubs.js";
-import { error, highlight, printResult, style, warning } from "./log.js";
+import { error, highlight, info, printResult, style, warning } from "./log.js";
 import { compileAss } from "./compileAss.js";
 import { number, select } from "@inquirer/prompts";
 import isInteractive from "is-interactive";
@@ -21,10 +21,14 @@ import { parseTOML } from "confbox";
 import { getTtf } from "extract-ttf";
 import { verifyConfigParams } from "./verifyConfigParams.js";
 import { PKG_NAME, PKG_VERSION } from "./package.js";
+import { extractSrtMatroska } from "./mkvExtract.js";
+import { selectTheme } from "./promptThemes.js";
+import { AppError } from "./customErrors.js";
+
 
 program
-  .requiredOption("-i, --input-subs <files...>", "one or more .srt or .bp files")
   .requiredOption("-v, --input-videos <files...>", "one or more video files")
+  .option("-i, --input-subs <files...>", "one or more .srt or .bp files")
   .option(
     "-c, --config-name <name>",
     "specify custom config name (e.g., 'myconfig' for myconfig.toml). " +
@@ -118,6 +122,16 @@ try {
   );
 
 
+  if (!inputSubs) {
+    if (!inputVideos.every(name => name.endsWith(".mkv"))) {
+      throw new AppError("--input-subs (-i) is required");
+    }
+    info("no --input-subs (-i) provided, trying to extract it from the video");
+    inputSubs = [];
+    for (const video of inputVideos) {
+      inputSubs.push(await extractSrtMatroska(video));
+    }
+  }
   if (inputSubs.some((s: string) => !/\.(?:srt|bp)$/.test(s))) {
     throw new AppError("--input-subs (-i): unexpected file extension")
   }
@@ -169,26 +183,6 @@ try {
   const interactive = config_params.miscellaneous.interactive && isInteractive();
 
 
-  const selectPromptTheme = {
-    prefix: "",
-    icon: { cursor: ">" },
-    style: {
-      answer: (t: string) => style(t, "dim"),
-      message: (t: string) => style(t + ":", undefined, true),
-      error: (t: string) => style(t, "red"),
-      help: (t: string) => style(t, "dim"),
-      highlight: (t: string) => style(t, undefined, true),
-      description: (t: string) => style(t, "dim"),
-      disabled: (t: string) => style(t, "strikethrough"),
-      keysHelpTip: (keys: [key: string, action: string][]) => {
-        return keys.map(([key, action]) => {
-          return `${style(`${key} ${action}`, "dim")}`;
-        }).join(style(', ', "dim"));
-      },
-    },
-  };
-
-
   let fontBuffer!: Buffer;
   let font!: Font;
   if (fontPath) {
@@ -215,7 +209,7 @@ try {
             }
           }),
           message: `Select a font from collection ${basename(fontPath)}`,
-          theme: selectPromptTheme,
+          theme: selectTheme,
         })
       } else {
         warning(
@@ -354,7 +348,7 @@ try {
             value: {},
           }),
           pageSize: 15,
-          theme: selectPromptTheme,
+          theme: selectTheme,
         });
         if (Object.keys(resp).length) {
           variationAxes = resp;

@@ -4,6 +4,7 @@ import { exec } from "child_process";
 import { warning } from "./log.js";
 import { basename } from "path";
 import { VideoData } from "./types.js";
+import { escapeQuotes } from "./utils.js";
 
 let fluentFfmpegPathSet = false;
 
@@ -85,7 +86,7 @@ function getData(video: string, streamIndex: number): Promise<VideoData | null> 
     exec(
       `${ffprobePath} -v error -select_streams v:${streamIndex} ` +
       "-show_entries stream=width,height,sample_aspect_ratio,color_range,color_space " +
-      `-of csv=s=_:p=0 "${video.replace(/"/g, '\\"')}"`, (err, stdout) => {
+      `-of csv=s=_:p=0 "${escapeQuotes(video)}"`, (err, stdout) => {
         if (err) {
           return resolve(null);
         }

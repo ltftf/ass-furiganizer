@@ -8,7 +8,8 @@ import {
 } from "./types.js";
 import { VideoSubs } from "./VideoSubs.js";
 import { timeToSeconds } from "./time.js";
-import { AppError, getUnicodeHex } from "./utils.js";
+import { getUnicodeHex } from "./utils.js";
+import { AppError } from "./customErrors.js";
 
 let
   font: Font,

@@ -2,17 +2,6 @@ import { rgb as getRgb } from "d3-color";
 import path from "path";
 import { highlight } from "./log.js";
 
-export class AppError extends Error {
-  constructor(message: string, prefix?: string) {
-    let str = "";
-    if (prefix) {
-      str += `[${prefix}]: `;
-    }
-    str += `error: ${message}`;
-    super(str);
-    this.name = "AppError";
-  }
-}
 
 export function colorToAss(color: string): string {
   if (/^&h(?:[0-9a-f]{2}){1,4}$/i.test(color)) {
@@ -68,4 +57,8 @@ export function getUnicodeHex(char: string) {
 
 export function round(n: number): number {
   return Math.round(n * 10) / 10;
+}
+
+export function escapeQuotes(str: string) {
+  return str.replace(/"/g, '\\"');
 }
