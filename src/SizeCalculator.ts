@@ -1,5 +1,5 @@
 import { ConfigParams, Param } from "./types.js";
-import { round } from "./utils.js";
+import { round } from "./utils/number.js";
 
 export class SizeCalculator {
   private params: ConfigParams;

@@ -8,7 +8,7 @@ import {
 } from "./types.js";
 import { VideoSubs } from "./VideoSubs.js";
 import { timeToSeconds } from "./time.js";
-import { getUnicodeHex } from "./utils.js";
+import { getUnicodeHex } from "./utils/string.js";
 import { AppError } from "./customErrors.js";
 
 let

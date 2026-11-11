@@ -2,7 +2,7 @@
 import { Option, program } from "commander";
 import fs from "fs/promises";
 import { basename, dirname, join, resolve, isAbsolute } from "path";
-import { getChar, getUnicodeDecimal, getUnicodeHex, setExtension } from "./utils.js";
+import { getChar, getUnicodeDecimal, getUnicodeHex, setExtension } from "./utils/string.js";
 import { getVideoResolution } from "./getVideoData.js";
 import { CliParams, ConfigParams, VariationAxes } from "./types.js";
 import { create, Font, FontCollection } from "fontkit";

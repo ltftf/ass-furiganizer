@@ -1,7 +1,8 @@
 import { EOL } from "os";
 import { AxesArray, ConfigParams, Dialogue, PositionCoors, VariationAxes } from "./types.js";
 import { Font } from "fontkit";
-import { booleanToAss, colorToAss, round } from "./utils.js";
+import { booleanToAss, colorToAss } from "./utils/ass.js";
+import { round } from "./utils/number.js";
 import { encode } from "uuencode4ass";
 import subsetFont from "subset-font";
 import { VideoSubs } from "./VideoSubs.js";

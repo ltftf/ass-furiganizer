@@ -4,7 +4,7 @@ import { exec } from "child_process";
 import { warning } from "./log.js";
 import { basename } from "path";
 import { VideoData } from "./types.js";
-import { escapeQuotes } from "./utils.js";
+import { escapeQuotes } from "./utils/string.js";
 
 let fluentFfmpegPathSet = false;
 
