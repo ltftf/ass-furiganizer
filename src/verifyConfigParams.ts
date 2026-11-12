@@ -298,4 +298,8 @@ export function verifyConfigParams(params: ConfigParams, configName: string, par
       }
     }
   }
+  if (notUndefinedOr("boolean", params.substitute.remove_unsupported_chars)) {
+    warning("'remove_unsupported_chars': expected a boolean", configName)
+    params.substitute.remove_unsupported_chars = false;
+  }
 }

@@ -48,6 +48,7 @@ export interface StyleParams {
 export type Substitute = {
   text: [string, string][];
   furigana: [string, string][];
+  remove_unsupported_chars: boolean | undefined;
 };
 export type AxesArray = [number, number];
 export interface ConfigParams {

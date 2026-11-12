@@ -6,6 +6,8 @@ import json5 from "json5";
 import { EOL } from "os";
 import { processAssTime, timeToSeconds } from "./time.js";
 import chalk from "chalk";
+import { removeDuplicates } from "./utils/string.js";
+import { warning } from "./log.js";
 
 export class VideoSubs {
   public dialogues: Dialogue[] = [];
@@ -38,7 +40,12 @@ export class VideoSubs {
   }
 
 
-  public async createFromInputFile(inputFile: string, params: ConfigParams) {
+  public async createFromInputFile(
+    inputFile: string,
+    params: ConfigParams,
+    charSupported: (char: string) => boolean,
+    getUnsupportedCharsListStr: (unsupported: string[]) => string,
+  ) {
     this.params = params;
     const data = await readFile(inputFile, { encoding: "utf-8" });
     if (inputFile.endsWith(".srt")) {
@@ -46,6 +53,7 @@ export class VideoSubs {
       if (!parsedSrt.length) {
         throw "found no subtitles in the SRT file";
       }
+      let removedUnsupportedChars: string = "";
       for (const dialogue of parsedSrt) {
         const lines = dialogue.lines;
         for (let i = 0; i < lines.length; i++) {
@@ -53,13 +61,33 @@ export class VideoSubs {
           for (const [find, replace] of params.substitute.text) {
             if (find.startsWith("U+")) {
               lines[i] = lines[i].replace(
-                new RegExp(`\\u{${find.replace("U+", "")}}`, "ug"), replace
+                new RegExp(`\\u{${find.replace("U+", "")}}`, "ug"),
+                replace
               );
             } else {
               lines[i] = lines[i].replace(new RegExp(find, "g"), replace);
             }
           }
+          if (params.substitute.remove_unsupported_chars) {
+            const lineChars = lines[i].split("");
+            for (let i = lineChars.length - 1; i >= 0; i--) {
+              const char = lineChars[i];
+              if (!charSupported(char)) {
+                lineChars.splice(i, 1);
+                removedUnsupportedChars += char;
+              }
+            }
+            lines[i] = lineChars.join("");
+          }
         }
+      }
+      if (removedUnsupportedChars) {
+        const chars = removeDuplicates(removedUnsupportedChars);
+        warning(
+          `remove_unsupported_chars: removed ${chars.length} ` +
+          `character${chars.length > 1 ? "s" : ""} that ${chars.length === 1 ? "is" : "are"} ` +
+          "unsupported by the font: " + getUnsupportedCharsListStr(chars.split(""))
+        );
       }
       for (let d = parsedSrt.length - 1; d >= 0; d--) {
         const lines = parsedSrt[d].lines;
@@ -263,21 +291,17 @@ export class VideoSubs {
 
   public getCharset(textOnly?: boolean) {
     let chars = "";
-    function appendChars(str: string): void {
-      for (const char of str) {
-        if (!chars.includes(char)) {
-          chars += char;
-        }
-      }
-    }
     for (const dialogue of this.dialogues) {
       const { lines } = dialogue;
       for (const line of lines) {
         for (const chunk of line) {
-          appendChars(chunk.text + (textOnly ? "" : chunk.furigana));
+          const str = chunk.text + (textOnly ? "" : chunk.furigana);
+          for (const char of str) {
+            chars += char;
+          }
         }
       }
     }
-    return chars;
+    return removeDuplicates(chars);
   }
 }

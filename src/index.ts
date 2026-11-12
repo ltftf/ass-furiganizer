@@ -415,36 +415,67 @@ try {
 
     sizeCalculator.updateValues(resY, config_params.styles.consistent_font_size);
 
+    function charSupported(char: string) {
+      return font.characterSet.includes(getUnicodeDecimal(char));
+    }
+    function getUnsupportedCharsListStr(unsupported: string[]) {
+      const CHARS_UNICODE = [
+        ["NUL", "Null character"], ["SOH", "Start of Heading"], ["STX", "Start of Text"],
+        ["ETX", "End of Text"], ["EOT", "End of Transmission"], ["ENQ", "Enquiry"],
+        ["ACK", "Acknowledge"], ["BEL", "Bell, Alert"], ["BS", "Backspace"],
+        ["HT", "Horizontal Tab"], ["LF", "Line Feed"], ["VT", "Vertical Tabulation"],
+        ["FF", "Form Feed"], ["CR", "Carriage Return"], ["SO", "Shift Out"],
+        ["SI", "Shift In"], ["DLE", "Data Link Escape"], ["DC1", "Device Control One (XON)"],
+        ["DC2", "Device Control Two"], ["DC3", "Device Control Three (XOFF)"],
+        ["DC4", "Device Control Four"], ["NAK", "Negative Acknowledge"],
+        ["SYN", "Synchronous Idle"], ["ETB", "End of Transmission Block"],
+        ["CAN", "Cancel"], ["EM", "End of medium"], ["SUB", "Substitute"],
+        ["ESC", "Escape"], ["FS", "File Separator"], ["GS", "Group Separator"],
+        ["RS", "Record Separator"], ["US", "Unit Separator"], ["SP", "Space"],
+      ];
+      const PRINT_CHARS = 20;
+      const [printChars, collapsed] =
+        ((unsupported.length <= PRINT_CHARS) || printAllChars)
+          ? [unsupported.length, false]
+          : [PRINT_CHARS, true];
+      let str = unsupported.slice(0, printChars).map(char => {
+        const unicode = getUnicodeDecimal(char);
+        let printChar = char;
+        if (unicode < 33) {
+          const [short, long] = CHARS_UNICODE[unicode];
+          printChar = `<${short}> - ${long}`;
+        }
+        return `'${printChar}' (${getUnicodeHex(char)})`;
+      }).join(", ");
+      if (collapsed) {
+        str += `... (${unsupported.length - printChars} more hidden)` +
+          ". Add '-U' to see the complete character list";
+      }
+      return str;
+    }
+
     const subs: VideoSubs = new VideoSubs();
     try {
-      await subs.createFromInputFile(inputSubFile, config_params);
+      await subs.createFromInputFile(
+        inputSubFile,
+        config_params,
+        charSupported,
+        getUnsupportedCharsListStr
+      );
     } catch (e: any) {
       printFail(e, inputSubName);
       continue;
     }
 
 
-    const CHARS_UNICODE = [
-      ["NUL", "Null character"], ["SOH", "Start of Heading"], ["STX", "Start of Text"],
-      ["ETX", "End of Text"], ["EOT", "End of Transmission"], ["ENQ", "Enquiry"],
-      ["ACK", "Acknowledge"], ["BEL", "Bell, Alert"], ["BS", "Backspace"],
-      ["HT", "Horizontal Tab"], ["LF", "Line Feed"], ["VT", "Vertical Tabulation"],
-      ["FF", "Form Feed"], ["CR", "Carriage Return"], ["SO", "Shift Out"],
-      ["SI", "Shift In"], ["DLE", "Data Link Escape"], ["DC1", "Device Control One (XON)"],
-      ["DC2", "Device Control Two"], ["DC3", "Device Control Three (XOFF)"],
-      ["DC4", "Device Control Four"], ["NAK", "Negative Acknowledge"],
-      ["SYN", "Synchronous Idle"], ["ETB", "End of Transmission Block"],
-      ["CAN", "Cancel"], ["EM", "End of medium"], ["SUB", "Substitute"],
-      ["ESC", "Escape"], ["FS", "File Separator"], ["GS", "Group Separator"],
-      ["RS", "Record Separator"], ["US", "Unit Separator"], ["SP", "Space"],
-    ];
-    const unsupported: string[] = [];
     const subCharset = subs.getCharset();
+    const unsupported: string[] = [];
     for (const char of subCharset) {
-      if (!font.characterSet.includes(getUnicodeDecimal(char))) {
+      if (!charSupported(char)) {
         unsupported.push(char);
       }
     }
+
     const basicHiragana73 = "[あいうえお-ちっつて-ろわをん]";
     const hiraganaFontMatched = font
       .characterSet.map(u => getChar(u)).join("")
@@ -460,6 +491,7 @@ try {
       );
       continue;
     }
+
     if (unsupported.length) {
       let furiganaOnlyCount = 0;
       const textOnlyCharset = subs.getCharset(true);
@@ -468,27 +500,11 @@ try {
           furiganaOnlyCount++;
         }
       }
-      const PRINT_CHARS = 20;
-      const [printChars, collapsed] =
-        ((unsupported.length <= PRINT_CHARS) || printAllChars)
-          ? [unsupported.length, false]
-          : [PRINT_CHARS, true];
-      let errMes = `${unsupported.length} out of ${subCharset.length} required ` +
+      let errMes =
+        `${unsupported.length} out of ${subCharset.length} required ` +
         `characters are unsupported by font ${highlight(font.fullName)}: ` +
-        unsupported.slice(0, printChars).map(char => {
-          const unicode = getUnicodeDecimal(char);
-          let printChar = char;
-          if (unicode < 33) {
-            const [short, long] = CHARS_UNICODE[unicode];
-            printChar = `<${short}> - ${long}`;
-          }
-          return `'${printChar}' (${getUnicodeHex(char)})`;
-        }).join(", ");
-      if (collapsed) {
-        errMes += `... (${unsupported.length - printChars} more hidden)` +
-          ". Add '-U' to see the complete character list";
-      }
-      errMes += ".\nPlease use another font or substitute these characters";
+        getUnsupportedCharsListStr(unsupported) +
+        ".\nPlease use another font or substitute these characters";
       if (furiganaOnlyCount) {
         errMes += `.\nNote: ${furiganaOnlyCount} of these characters are not ` +
           "present in the input file but generated as furigana"

@@ -8,7 +8,7 @@
     "test-visual": "npm run build && esbuild tests/test-visual.ts --outfile=tests/_test-visual.js --platform=node --format=esm --minify --sourcemap && clear && NODE_OPTIONS=--enable-source-maps node tests/_test-visual.js",
     "test-visual-fonts": "npm run build && clear && NODE_OPTIONS=--enable-source-maps node tests/test-fonts.js",
     "test-clean": "cd tests && rm -f videos/*.ass generated*/* _test*",
-    "test": "vitest",
+    "test": "node --test -- tests/index.js",
     "postinstall": "node scripts/createConfig.js"
   },
   "bin": {
