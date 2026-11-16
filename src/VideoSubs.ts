@@ -7,7 +7,7 @@ import { EOL } from "os";
 import { processAssTime, timeToSeconds } from "./time.js";
 import chalk from "chalk";
 import { removeDuplicates } from "./utils/string.js";
-import { warning } from "./log.js";
+import { info, warning } from "./log.js";
 
 export class VideoSubs {
   public dialogues: Dialogue[] = [];
@@ -47,17 +47,39 @@ export class VideoSubs {
     getUnsupportedCharsListStr: (unsupported: string[]) => string,
   ) {
     this.params = params;
-    const data = await readFile(inputFile, { encoding: "utf-8" });
+    const data = await readFile(inputFile, "utf-8");
     if (inputFile.endsWith(".srt")) {
-      const parsedSrt = fromSrt(data);
-      if (!parsedSrt.length) {
-        throw "found no subtitles in the SRT file";
+      await this.parseSrt(data, params, charSupported, getUnsupportedCharsListStr);
+    } else {
+      this.parseBlueprint(data);
+    }
+  }
+
+  private async parseSrt(
+    data: string,
+    params: ConfigParams,
+    charSupported: (char: string) => boolean,
+    getUnsupportedCharsListStr: (unsupported: string[]) => string,
+  ) {
+    info("parsing the SRT file...");
+    const parsedSrt = fromSrt(data);
+    if (!parsedSrt.length) {
+      throw "found no subtitles in the SRT file";
+    }
+
+    info("stripping any HTML tags...");
+    for (const dialogue of parsedSrt) {
+      const lines = dialogue.lines;
+      for (let i = 0; i < lines.length; i++) {
+        lines[i] = lines[i].replace(/<\/?(?:b|i|u|font[^>]*)>/g, "");
       }
-      let removedUnsupportedChars: string = "";
+    }
+
+    if (params.substitute.text.length) {
+      info("substitute.text: replacing characters...");
       for (const dialogue of parsedSrt) {
         const lines = dialogue.lines;
         for (let i = 0; i < lines.length; i++) {
-          lines[i] = lines[i].replace(/<\/?(?:b|i|u|font[^>]*)>/g, "");
           for (const [find, replace] of params.substitute.text) {
             if (find.startsWith("U+")) {
               lines[i] = lines[i].replace(
@@ -68,17 +90,25 @@ export class VideoSubs {
               lines[i] = lines[i].replace(new RegExp(find, "g"), replace);
             }
           }
-          if (params.substitute.remove_unsupported_chars) {
-            const lineChars = lines[i].split("");
-            for (let i = lineChars.length - 1; i >= 0; i--) {
-              const char = lineChars[i];
-              if (!charSupported(char)) {
-                lineChars.splice(i, 1);
-                removedUnsupportedChars += char;
-              }
+        }
+      }
+    }
+
+    if (params.substitute.remove_unsupported_chars) {
+      info("remove_unsupported_chars: removing characters...");
+      let removedUnsupportedChars: string = "";
+      for (const dialogue of parsedSrt) {
+        const lines = dialogue.lines;
+        for (let i = 0; i < lines.length; i++) {
+          const lineChars = lines[i].split("");
+          for (let i = lineChars.length - 1; i >= 0; i--) {
+            const char = lineChars[i];
+            if (!charSupported(char)) {
+              lineChars.splice(i, 1);
+              removedUnsupportedChars += char;
             }
-            lines[i] = lineChars.join("");
           }
+          lines[i] = lineChars.join("");
         }
       }
       if (removedUnsupportedChars) {
@@ -89,176 +119,198 @@ export class VideoSubs {
           "unsupported by the font: " + getUnsupportedCharsListStr(chars.split(""))
         );
       }
-      for (let d = parsedSrt.length - 1; d >= 0; d--) {
-        const lines = parsedSrt[d].lines;
-        for (let l = lines.length - 1; l >= 0; l--) {
-          lines[l] = lines[l].trim();
-          if (!lines[l]) {
-            lines.splice(l, 1);
-          }
-        }
-        if (!lines.length) {
-          parsedSrt.splice(d, 1);
+    }
+
+    info("stripping side spaces, empty lines and dialogues...");
+    for (let d = parsedSrt.length - 1; d >= 0; d--) {
+      const lines = parsedSrt[d].lines;
+      for (let l = lines.length - 1; l >= 0; l--) {
+        lines[l] = lines[l].trim();
+        if (!lines[l]) {
+          lines.splice(l, 1);
         }
       }
-      if (!parsedSrt.length) {
-        throw "no subtitles to process";
+      if (!lines.length) {
+        parsedSrt.splice(d, 1);
       }
+    }
+    if (!parsedSrt.length) {
+      throw "no subtitles to process";
+    }
 
-      this.dialogues = await furiganize(parsedSrt);
+    info("generating furigana...");
+    this.dialogues = await furiganize(parsedSrt);
 
-      const useInlineFuriganaLines: string[] = [];
-      for (let di = 0; di < this.dialogues.length; di++) {
-        const dialogue = this.dialogues[di];
+    if (params.substitute.furigana.length) {
+      info("substitute.furigana: replacing furigana words...");
+      for (const dialogue of this.dialogues) {
         for (const line of dialogue.lines) {
-          for (let ci = 0; ci < line.length; ci++) {
-            const chunk = line[ci];
+          for (const chunk of line) {
             chunk.furigana = chunk.furigana.trim();
             for (const [find, replace] of params.substitute.furigana) {
               if (chunk.furigana && chunk.furigana === find) {
                 chunk.furigana = replace;
               }
             }
-            if (ci < line.length - 1) {
-              const furigana = chunk.furigana;
-              if (furigana) {
-                const chunkNext = line[ci + 1];
-                if (params.miscellaneous.remove_inline_furigana) {
-                  chunkNext.text = chunkNext.text.replace(
-                    new RegExp(`^\\s*[(（]\\s*${furigana}\\s*[)）]`),
-                    ""
-                  );
-                }
-                if (params.miscellaneous.use_inline_furigana) {
-                  const inlineFurigana = chunkNext.text.match(/^\(([^)]+)\)/);
-                  if (inlineFurigana) {
-                    useInlineFuriganaLines.push(`${dialogue.startTime}: ` + line
-                      .map(chunk => chunk.text)
-                      .join("")
-                      .replace(
-                        chunk.text + inlineFurigana[0],
-                        chalk.level ? chalk.red("$&") : " < $& > "
-                      )
-                    );
-                    chunk.furigana = inlineFurigana[1];
-                    chunkNext.text = chunkNext.text.replace(inlineFurigana[0], "");
-                  }
-                }
-              }
-            }
           }
         }
-        if (di < this.dialogues.length - 1) {
-          const dialogueNext = this.dialogues[di + 1];
-          if (
-            timeToSeconds(dialogueNext.startTime) <
-            timeToSeconds(dialogue.endTime)
-          ) {
-            if ([4, 5, 6].includes(params.positioning.position)) {
-              throw (
-                `found dialogue overlap at dialogue ${di + 2}. Can't handle ` +
-                "overlapping when the subtitles are centered vertically. Use any " +
-                "'position' other than 4, 5 or 6 with 'shift' instead"
-              );
-            }
-            if (params.styles.opaque_box?.enable) {
-              throw (
-                `found dialogue overlap at dialogue ${di + 2}. Can't draw ` +
-                "opaque box with overlapping dialogues"
-              );
+      }
+    }
+
+    if (
+      params.miscellaneous.remove_inline_furigana ||
+      params.miscellaneous.use_inline_furigana
+    ) {
+      info("handling inline furigana...");
+      const useInlineFuriganaLines: string[] = [];
+      for (const dialogue of this.dialogues) {
+        for (const line of dialogue.lines) {
+          for (let i = 0; i < line.length - 1; i++) {
+            const chunk = line[i];
+            const furigana = chunk.furigana;
+            if (furigana) {
+              const chunkNext = line[i + 1];
+              if (params.miscellaneous.remove_inline_furigana) {
+                chunkNext.text = chunkNext.text.replace(
+                  new RegExp(`^\\s*[(（]\\s*${furigana}\\s*[)）]`),
+                  ""
+                );
+              }
+              if (params.miscellaneous.use_inline_furigana) {
+                const inlineFurigana = chunkNext.text.match(/^\(([^)]+)\)/);
+                if (inlineFurigana) {
+                  useInlineFuriganaLines.push(`${dialogue.startTime}: ` + line
+                    .map(chunk => chunk.text)
+                    .join("")
+                    .replace(
+                      chunk.text + inlineFurigana[0],
+                      chalk.level ? chalk.red("$&") : " < $& > "
+                    )
+                  );
+                  chunk.furigana = inlineFurigana[1];
+                  chunkNext.text = chunkNext.text.replace(inlineFurigana[0], "");
+                }
+              }
             }
           }
         }
       }
       if (useInlineFuriganaLines.length) {
-        console.log("use_inline_furigana: applying changes to these lines:");
+        info("use_inline_furigana: applying changes to these lines:", true);
         for (const line of useInlineFuriganaLines) {
           console.log(` • ${line}`);
         }
       }
-    } else {
-      let split = data.split(
-        /Dialogue \d+ \((\d{1,3}:\d{2}:\d{2}\.\d{2} - \d{1,3}:\d{2}:\d{2}\.\d{2})\)(?: \[position: (\d)\])?:/
-      );
-      const leadingText = split[0];
-      const incorrectFormatting = (line: number) => `incorrect formatting at line ${line}`;
-      if (leadingText.trim()) {
-        const lineCount = (str: string) => str.split(/\r?\n/).length;
-        throw incorrectFormatting(lineCount(leadingText) - lineCount(leadingText.trimStart()) + 1);
-      }
-      split = split.slice(1);
-      let json = "{";
-      for (let i = 0; i < split.length; i += 3) {
-        const time = split[i];
-        const position = split[i + 1];
-        const data = split[i + 2];
-        let dialogueKey = time;
-        if (position && position !== "0") {
-          dialogueKey += " - " + position;
-        }
-        json += "'" + dialogueKey + "':";
-        json += "[" + data + "],";
-      }
-      json += "}";
-      let subs: Blueprint;
-      try {
-        subs = json5.parse(json);
-      } catch (e: any) {
-        if (e.lineNumber) {
-          throw incorrectFormatting(e.lineNumber);
-        } else {
-          throw e.message;
-        }
-      }
-      const keys = Object.keys(subs);
-      for (let i = 0; i < keys.length; i++) {
-        const key = keys[i];
-        const [startTime, endTime, position] = key.split(" - ");
-        const dialogue: Dialogue = {
-          startTime: processAssTime(startTime),
-          endTime: processAssTime(endTime),
-          lines: [],
-          opaqueBox: "",
-          position: position ? parseInt(position) : undefined,
-        }
-        const lines = subs[key];
-        if (
-          !lines ||
-          !Array.isArray(lines) ||
-          !lines.length ||
-          !lines.every(line => Array.isArray(line) && line.length && line.every(chunk => {
-            if (typeof chunk !== "object" || chunk === null || Array.isArray(chunk)) {
-              return false;
-            }
-            const keys = Object.keys(chunk);
-            return (
-              keys.length === 2 &&
-              keys.includes("text") &&
-              keys.includes("furigana") &&
-              Object.values(chunk).every(val => typeof val === "string")
-            );
-          }))
-        ) {
+    }
+
+    for (let i = 0; i < this.dialogues.length - 1; i++) {
+      const dialogue = this.dialogues[i];
+      const dialogueNext = this.dialogues[i + 1];
+      if (
+        timeToSeconds(dialogueNext.startTime) <
+        timeToSeconds(dialogue.endTime)
+      ) {
+        const dialogueCount = i + 2;
+        if ([4, 5, 6].includes(params.positioning.position)) {
           throw (
-            `Dialogue ${i + 1}: incorrect structure. Expected one or more arrays ` +
-            "containing objects with a 'text': <string> and 'furigana': <string> fields"
+            `found dialogue overlap at dialogue ${dialogueCount}. Can't handle ` +
+            "overlapping when the subtitles are centered vertically. Use any " +
+            "'position' other than 4, 5 or 6 with 'shift' instead"
           );
         }
-        for (const line of lines) {
-          const nextLine: Line = [];
-          for (const chunk of line) {
-            nextLine.push({
-              ...chunk,
-              position: {
-                text: { x: 0, y: 0 },
-                furigana: { x: 0, y: 0 }
-              }
-            });
-          }
-          dialogue.lines.push(nextLine);
+        if (params.styles.opaque_box?.enable) {
+          throw (
+            `found dialogue overlap at dialogue ${dialogueCount}. Can't draw ` +
+            "opaque box with overlapping dialogues"
+          );
         }
-        this.dialogues.push(dialogue);
       }
+    }
+  }
+
+  private parseBlueprint(data: string) {
+    info("parsing the blueprint...");
+    let split = data.split(
+      /Dialogue \d+ \((\d{1,3}:\d{2}:\d{2}\.\d{2} - \d{1,3}:\d{2}:\d{2}\.\d{2})\)(?: \[position: (\d)\])?:/
+    );
+    const leadingText = split[0];
+    const incorrectFormatting = (line: number) => `incorrect formatting at line ${line}`;
+    if (leadingText.trim()) {
+      const lineCount = (str: string) => str.split(/\r?\n/).length;
+      throw incorrectFormatting(lineCount(leadingText) - lineCount(leadingText.trimStart()) + 1);
+    }
+    split = split.slice(1);
+    let json = "{";
+    for (let i = 0; i < split.length; i += 3) {
+      const time = split[i];
+      const position = split[i + 1];
+      const data = split[i + 2];
+      let dialogueKey = time;
+      if (position && position !== "0") {
+        dialogueKey += " - " + position;
+      }
+      json += "'" + dialogueKey + "':";
+      json += "[" + data + "],";
+    }
+    json += "}";
+    let subs: Blueprint;
+    try {
+      subs = json5.parse(json);
+    } catch (e: any) {
+      if (e.lineNumber) {
+        throw incorrectFormatting(e.lineNumber);
+      } else {
+        throw e.message;
+      }
+    }
+    const keys = Object.keys(subs);
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const [startTime, endTime, position] = key.split(" - ");
+      const dialogue: Dialogue = {
+        startTime: processAssTime(startTime),
+        endTime: processAssTime(endTime),
+        lines: [],
+        opaqueBox: "",
+        position: position ? parseInt(position) : undefined,
+      }
+      const lines = subs[key];
+      if (
+        !lines ||
+        !Array.isArray(lines) ||
+        !lines.length ||
+        !lines.every(line => Array.isArray(line) && line.length && line.every(chunk => {
+          if (typeof chunk !== "object" || chunk === null || Array.isArray(chunk)) {
+            return false;
+          }
+          const keys = Object.keys(chunk);
+          return (
+            keys.length === 2 &&
+            keys.includes("text") &&
+            keys.includes("furigana") &&
+            Object.values(chunk).every(val => typeof val === "string")
+          );
+        }))
+      ) {
+        throw (
+          `Dialogue ${i + 1}: incorrect structure. Expected one or more arrays ` +
+          "containing objects with a 'text': <string> and 'furigana': <string> fields"
+        );
+      }
+      for (const line of lines) {
+        const nextLine: Line = [];
+        for (const chunk of line) {
+          nextLine.push({
+            ...chunk,
+            position: {
+              text: { x: 0, y: 0 },
+              furigana: { x: 0, y: 0 }
+            }
+          });
+        }
+        dialogue.lines.push(nextLine);
+      }
+      this.dialogues.push(dialogue);
     }
   }
 

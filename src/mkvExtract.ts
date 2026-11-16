@@ -50,6 +50,7 @@ function extractTrack(video: string, trackId: number, destination: string): Prom
 }
 
 export async function extractSrtMatroska(video: string): Promise<string> {
+  info("reading mkv metadata...");
   const data = await getData(video);
   if (data.warnings) {
     for (const warnString of data.warnings) {
@@ -94,7 +95,8 @@ export async function extractSrtMatroska(video: string): Promise<string> {
     })
   }
   const extractedSrtPath = join(ospath.tmp(), setExtension(video, "srt"));
-  info(`extracting track #${trackId} to ${extractedSrtPath}`);
+  info(`extracting track #${trackId} to ${extractedSrtPath}...`, true);
   await extractTrack(video, trackId, extractedSrtPath);
+  info(`track #${trackId} extracted`, true);
   return extractedSrtPath;
 }

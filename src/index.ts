@@ -10,7 +10,7 @@ import { createFont } from 'fonteditor-core';
 import { setAnalyzer } from "./kuroshiro.js";
 import { processSubs } from "./positionSubs.js";
 import { VideoSubs } from "./VideoSubs.js";
-import { error, highlight, info, printResult, style, warning } from "./log.js";
+import { error, highlight, info, printResult, setVerbose, style, warning } from "./log.js";
 import { compileAss } from "./compileAss.js";
 import { number, select } from "@inquirer/prompts";
 import isInteractive from "is-interactive";
@@ -25,9 +25,10 @@ import { extractSrtMatroska } from "./mkvExtract.js";
 import { selectTheme } from "./promptThemes.js";
 import { AppError } from "./customErrors.js";
 
+const startTime = Date.now();
 
 program
-  .requiredOption("-v, --input-videos <files...>", "one or more video files")
+  .requiredOption("-v, --input-videos <files...>", "one or more video files (required)")
   .option("-i, --input-subs <files...>", "one or more .srt or .bp files")
   .option(
     "-c, --config-name <name>",
@@ -64,6 +65,7 @@ program
     "this resolution will be used if it can't be detected automatically from the " +
     "video. Format: <width>x<height> (e.g., '1920x1080')"
   )
+  .option("--verbose", "print more info")
   .addOption(
     new Option("--output-file-name <name>", "override output file name").hideHelp()
   )
@@ -86,15 +88,19 @@ try {
     printAllChars,
     embedFont,
     resolution,
+    verbose,
     outputFileName,
     oneSrtFile,
   }: CliParams = program.parse().opts();
+
+  setVerbose(verbose);
 
   let config_params: ConfigParams;
   let configData: string;
   const configFileName = `${configName ?? "config"}.toml`;
   const configDir = join(ospath.data(), PKG_NAME);
   const configPath = join(configDir, configFileName);
+  info(`reading config ${configPath}...`);
   try {
     configData = await fs.readFile(configPath, { encoding: "utf-8" });
   } catch (e: any) {
@@ -104,12 +110,14 @@ try {
       throw new AppError("could not read the config file", configFileName);
     }
   }
+  info("parsing config...");
   try {
     config_params = parseTOML(configData);
   } catch (e: any) {
     console.log(e.message);
     throw new AppError("could not parse the config file", configFileName);
   }
+  info("verifying config options...");
   verifyConfigParams(
     config_params,
     configFileName,
@@ -122,11 +130,17 @@ try {
   );
 
 
+  setDialoguesShift(shiftTime);
+  setAnalyzer(config_params.miscellaneous.analyzer);
+  const interactive = config_params.miscellaneous.interactive && isInteractive();
+
+
+  info("verifying cli options...");
   if (!inputSubs) {
     if (!inputVideos.every(name => name.endsWith(".mkv"))) {
-      throw new AppError("--input-subs (-i) is required");
+      throw new AppError("--input-subs (-i) are required unless the videos are of MKV format");
     }
-    info("no --input-subs (-i) provided, trying to extract it from the video");
+    info("no --input-subs (-i) provided, trying to extract it from the video...", true);
     inputSubs = [];
     for (const video of inputVideos) {
       inputSubs.push(await extractSrtMatroska(video));
@@ -149,6 +163,7 @@ try {
   }
 
 
+  info("resolving output_dir...");
   let outputDir: string | undefined;
   if (config_params.miscellaneous.output_dir && !ignoreOutputDir) {
     outputDir = config_params.miscellaneous.output_dir;
@@ -170,6 +185,7 @@ try {
       throw new AppError(`output_dir: ${outputDir} is not a directory`, configFileName);
     }
   }
+  info("resolving font_path...");
   if (!fontPath && config_params.styles.font_path) {
     fontPath = config_params.styles.font_path;
     if (!isAbsolute(fontPath)) {
@@ -178,11 +194,7 @@ try {
   }
 
 
-  setAnalyzer(config_params.miscellaneous.analyzer);
-  setDialoguesShift(shiftTime);
-  const interactive = config_params.miscellaneous.interactive && isInteractive();
-
-
+  info("parsing font...");
   let fontBuffer!: Buffer;
   let font!: Font;
   if (fontPath) {
@@ -249,6 +261,7 @@ try {
   }
 
 
+  info("verifying font fullName format...");
   const re = "[^a-zA-Z0-9-_ ]";
   const MAX_FONT_NAME_CHAR = 31;
   let fontRenamed = false;
@@ -286,6 +299,7 @@ try {
   const namedVariations = Object.entries(font.namedVariations || {});
 
   if (!embedFont) {
+    info("--no-embed-font: ensuring embedding can be skipped");
     if (fontAxes.length) {
       throw new AppError("--no-embed-font: can't skip embedding for a variable font");
     }
@@ -299,6 +313,7 @@ try {
     )
   }
 
+  info("checking if the font is variable...");
   if (fontAxes.length) {
     if (interactive) {
       async function promptForCustomValues() {
@@ -375,6 +390,11 @@ try {
   const sizeCalculator = new SizeCalculator(config_params);
 
   for (let i = 0; i < inputVideos.length; i++) {
+    if (inputVideos.length > 1) {
+      info(`processing input files: ${i + 1}/${inputVideos.length}:`);
+      info(`(${setExtension(basename(inputVideos[i]))})`);
+    }
+    info("resolving input and output file paths...");
     const inputSubFile = resolve(inputSubs[oneSrtFile ? 0 : i]);
     const inputSubName = basename(inputSubFile);
     const inputVideoFile = resolve(inputVideos[i]);
@@ -395,8 +415,9 @@ try {
 
     let resX: number, resY: number, matrix: string;
     try {
+      info("getting the video resolution...");
       [resX, resY, matrix] = await getVideoResolution(inputVideoFile);
-    } catch {
+    } catch (err: any) {
       if (resolution) {
         if (!/^\d+[xх]\d+$/.test(resolution)) {
           throw new AppError("--resolution: incorrect format");
@@ -405,9 +426,9 @@ try {
         matrix = "None";
       } else {
         printFail(
-          `failed to detect the resolution of video ${highlight(inputVideoFile)}. ` +
-          "If the path is correct, please provide --resolution",
-          basename(inputVideoFile)
+          (err ?? "failed to detect the video resolution.") +
+          " If the error persists please provide --resolution",
+          inputVideoFile
         );
         continue;
       }
@@ -468,53 +489,57 @@ try {
     }
 
 
-    const subCharset = subs.getCharset();
-    const unsupported: string[] = [];
-    for (const char of subCharset) {
-      if (!charSupported(char)) {
-        unsupported.push(char);
-      }
-    }
-
-    const basicHiragana73 = "[あいうえお-ちっつて-ろわをん]";
-    const hiraganaFontMatched = font
-      .characterSet.map(u => getChar(u)).join("")
-      .match(new RegExp(basicHiragana73, "ug"));
-    if (
-      new RegExp(basicHiragana73, "u").test(subCharset) &&
-      (!hiraganaFontMatched || hiraganaFontMatched.length < 73)
-    ) {
-      printFail(
-        `found Japanese text but font ${highlight(font.fullName)} ` +
-        "does not support basic hiragana. Please choose another font",
-        inputSubName
-      );
-      continue;
-    }
-
-    if (unsupported.length) {
-      let furiganaOnlyCount = 0;
-      const textOnlyCharset = subs.getCharset(true);
-      for (const char of unsupported) {
-        if (!textOnlyCharset.includes(char)) {
-          furiganaOnlyCount++;
+    if (!config_params.substitute.remove_unsupported_chars) {
+      info("checking for characters unsupported by the font...");
+      const subCharset = subs.getCharset();
+      const unsupported: string[] = [];
+      for (const char of subCharset) {
+        if (!charSupported(char)) {
+          unsupported.push(char);
         }
       }
-      let errMes =
-        `${unsupported.length} out of ${subCharset.length} required ` +
-        `characters are unsupported by font ${highlight(font.fullName)}: ` +
-        getUnsupportedCharsListStr(unsupported) +
-        ".\nPlease use another font or substitute these characters";
-      if (furiganaOnlyCount) {
-        errMes += `.\nNote: ${furiganaOnlyCount} of these characters are not ` +
-          "present in the input file but generated as furigana"
+
+      const basicHiragana73 = "[あいうえお-ちっつて-ろわをん]";
+      const hiraganaFontMatched = font
+        .characterSet.map(u => getChar(u)).join("")
+        .match(new RegExp(basicHiragana73, "ug"));
+      if (
+        new RegExp(basicHiragana73, "u").test(subCharset) &&
+        (!hiraganaFontMatched || hiraganaFontMatched.length < 73)
+      ) {
+        printFail(
+          `found Japanese text but font ${highlight(font.fullName)} ` +
+          "does not support basic hiragana. Please choose another font",
+          inputSubName
+        );
+        continue;
       }
-      printFail(errMes, inputSubName);
-      continue;
+
+      if (unsupported.length) {
+        let furiganaOnlyCount = 0;
+        const textOnlyCharset = subs.getCharset(true);
+        for (const char of unsupported) {
+          if (!textOnlyCharset.includes(char)) {
+            furiganaOnlyCount++;
+          }
+        }
+        let errMes =
+          `${unsupported.length} out of ${subCharset.length} required ` +
+          `characters are unsupported by font ${highlight(font.fullName)}: ` +
+          getUnsupportedCharsListStr(unsupported) +
+          ".\nPlease use another font or substitute these characters";
+        if (furiganaOnlyCount) {
+          errMes += `.\nNote: ${furiganaOnlyCount} of these characters are not ` +
+            "present in the input file but generated as furigana"
+        }
+        printFail(errMes, inputSubName);
+        continue;
+      }
     }
 
 
     try {
+      info("positioning the subtitles...");
       processSubs(subs, font, resX, resY);
     } catch (e: any) {
       printFail(e, outputSubName);
@@ -524,6 +549,7 @@ try {
 
     let assData: string;
     try {
+      info("compiling the output file...");
       assData = await compileAss(
         resX,
         resY,
@@ -540,7 +566,8 @@ try {
       continue;
     }
     try {
-      await fs.writeFile(outputSubFile, assData, { encoding: "utf-8" });
+      info("saving the output file...");
+      await fs.writeFile(outputSubFile, assData, "utf-8");
       printResult(outputSubName, true);
     } catch (e: any) {
       printFail(e.message, outputSubName);
@@ -549,12 +576,14 @@ try {
     if (generateBlueprint && !inputSubName.endsWith(".bp")) {
       const blueprintFile = setExtension(inputSubFile, "bp");
       try {
-        await fs.writeFile(blueprintFile, subs.generateBlueprint(), { encoding: "utf-8" });
+        info("generating the blueprint...");
+        await fs.writeFile(blueprintFile, subs.generateBlueprint(), "utf-8");
       } catch (e: any) {
         error("could not save blueprint: " + e.message, basename(blueprintFile));
       }
     }
   }
+  info(`finished in ${Date.now() - startTime}ms`);
 } catch (e: any) {
   process.exitCode = 1;
   if (e instanceof Error) {

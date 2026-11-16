@@ -111,6 +111,7 @@ export interface CliParams {
   printAllChars: boolean,
   embedFont: boolean,
   resolution: string | undefined,
+  verbose: boolean,
   outputFileName: string | undefined,
   oneSrtFile: boolean,
 }

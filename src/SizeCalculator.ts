@@ -1,3 +1,4 @@
+import { info } from "./log.js";
 import { ConfigParams, Param } from "./types.js";
 import { round } from "./utils/number.js";
 
@@ -14,6 +15,7 @@ export class SizeCalculator {
   private setFuriganaStyle() {
     const scaleFactor = this.params.styles.furigana.scale_factor;
     if (scaleFactor) {
+      info("styles.furigana.scale_factor: setting furigana style...");
       const ts = this.params.styles.text.fontsize;
       const fs = round(ts * scaleFactor);
       this.params.styles.furigana.fontsize = fs;
@@ -37,6 +39,7 @@ export class SizeCalculator {
   }
 
   public updateValues(videoHeight: number, consistentFontSize?: boolean) {
+    info("adjusting style values...");
     const params: Param[] = [
       "positioning.furigana_offset",
       "positioning.line_distance",

@@ -12,12 +12,12 @@ import { getUnicodeHex } from "./utils/string.js";
 import { AppError } from "./customErrors.js";
 
 let
-  font: Font,
-  resX: number,
-  resY: number,
-  ascent: number,
-  descent: number,
-  fontMetricHeight: number;
+  _font: Font,
+  _resX: number,
+  _resY: number,
+  _ascent: number,
+  _descent: number,
+  _fontMetricHeight: number;
 
 function verifyMetricValue(value: number, char: string, allowInfinity?: boolean) {
   if (typeof value !== "number" || (!allowInfinity && !Number.isFinite(value))) {
@@ -33,8 +33,8 @@ function positionSubs(subs: VideoSubs) {
   const params = subs.params.positioning;
   const styles = subs.params.styles;
 
-  const textRatio = fontMetricHeight / styles.text.fontsize;
-  const furiganaRatio = fontMetricHeight / styles.furigana.fontsize;
+  const textRatio = _fontMetricHeight / styles.text.fontsize;
+  const furiganaRatio = _fontMetricHeight / styles.furigana.fontsize;
 
   function shiftChunk(
     chunk: Chunk,
@@ -78,9 +78,9 @@ function positionSubs(subs: VideoSubs) {
 
   function getSidePadding(str: string, ratio: number) {
     const char = str[0];
-    const left = verifyMetricValue(font.layout(char).bbox.minX, char) / ratio;
+    const left = verifyMetricValue(_font.layout(char).bbox.minX, char) / ratio;
     const lastChar = str[str.length - 1];
-    const run = font.layout(lastChar);
+    const run = _font.layout(lastChar);
     const right = (
       verifyMetricValue(run.advanceWidth, lastChar) -
       verifyMetricValue(run.bbox.maxX, lastChar)
@@ -95,12 +95,12 @@ function positionSubs(subs: VideoSubs) {
     const text: VerticalPadding = { top: Infinity, bottom: Infinity };
     for (const chunk of line) {
       for (const char of chunk.text) {
-        const bbox = font.layout(char).bbox;
+        const bbox = _font.layout(char).bbox;
         const top =
-          (ascent - verifyMetricValue(bbox.maxY, char, true))
+          (_ascent - verifyMetricValue(bbox.maxY, char, true))
           / textRatio;
         const bottom =
-          (verifyMetricValue(bbox.minY, char, true) - descent)
+          (verifyMetricValue(bbox.minY, char, true) - _descent)
           / textRatio;
         if (top < text.top) {
           text.top = top;
@@ -116,12 +116,12 @@ function positionSubs(subs: VideoSubs) {
       for (const chunk of line) {
         if (chunk.furigana) {
           for (const char of chunk.furigana) {
-            const bbox = font.layout(char).bbox;
+            const bbox = _font.layout(char).bbox;
             const top =
-              (ascent - verifyMetricValue(bbox.maxY, char, true))
+              (_ascent - verifyMetricValue(bbox.maxY, char, true))
               / furiganaRatio;
             const bottom =
-              (verifyMetricValue(bbox.minY, char, true) - descent)
+              (verifyMetricValue(bbox.minY, char, true) - _descent)
               / furiganaRatio;
             if (top < furi.top) {
               furi.top = top;
@@ -139,7 +139,7 @@ function positionSubs(subs: VideoSubs) {
   function measureTextWidth(str: string, ratio: number): number {
     let width = 0;
     for (const char of str) {
-      const run = font.layout(char);
+      const run = _font.layout(char);
       width += verifyMetricValue(run.advanceWidth, char) / ratio;
     }
     return width;
@@ -194,7 +194,7 @@ function positionSubs(subs: VideoSubs) {
   const unfinishedDialogues: { endSec: number, shift: number }[] = [];
   for (let di = 0; di < subs.dialogues.length; di++) {
     const { lines } = subs.dialogues[di];
-    let yPos = resY - styles.text.fontsize - unfinishedDialogues.reduce(
+    let yPos = _resY - styles.text.fontsize - unfinishedDialogues.reduce(
       (a, b) => (
         a + (b.shift + params.line_distance) *
         ([7, 8, 9].includes(params.position) ? -1 : 1)
@@ -344,20 +344,20 @@ function positionSubs(subs: VideoSubs) {
       let shiftX = 0;
       let shiftY = 0;
       if ([3, 6, 9 /* by the right border */].includes(params.position)) {
-        shiftX = resX - width;
+        shiftX = _resX - width;
       } else if (
         ![4, 7].includes(params.position)
         /* not by the left border nor right (centered horizontally) */
       ) {
-        shiftX = resX / 2 - width / 2;
+        shiftX = _resX / 2 - width / 2;
       }
       if ([7, 8, 9 /* by the top border */].includes(params.position)) {
-        shiftY = -resY + height;
+        shiftY = -_resY + height;
       } else if (
         ![2, 3].includes(params.position)
         /* not by the bottom border nor top (centered vertically) */
       ) {
-        shiftY = -resY / 2 + height / 2;
+        shiftY = -_resY / 2 + height / 2;
       }
       shiftDialogue(dialogue, shiftX, "x");
       shiftDialogue(dialogue, shiftY, "y");
@@ -425,7 +425,7 @@ function positionSubs(subs: VideoSubs) {
             const char = chunk.furigana[0];
             const furiX =
               chunk.position.furigana.x +
-              verifyMetricValue(font.layout(char).bbox.minX, char) / furiganaRatio;
+              verifyMetricValue(_font.layout(char).bbox.minX, char) / furiganaRatio;
             if (furiX < x) {
               w += x - furiX;
               x = furiX;
@@ -502,26 +502,26 @@ function positionSubs(subs: VideoSubs) {
 
 export function processSubs(
   subs: VideoSubs,
-  _font: Font,
-  _resX: number,
-  _resY: number,
+  font: Font,
+  resX: number,
+  resY: number,
 ) {
-  font = _font;
-  resX = _resX;
-  resY = _resY;
-  ascent = Number.isFinite(font["OS/2"].winAscent)
+  _font = font;
+  _resX = resX;
+  _resY = resY;
+  _ascent = Number.isFinite(font["OS/2"].winAscent)
     ? font["OS/2"].winAscent
     : font.ascent;
-  descent = Number.isFinite(font["OS/2"].winDescent)
+  _descent = Number.isFinite(font["OS/2"].winDescent)
     ? -font["OS/2"].winDescent
     : font.descent;
-  if (!Number.isFinite(ascent) || !Number.isFinite(descent)) {
+  if (!Number.isFinite(_ascent) || !Number.isFinite(_descent)) {
     throw new AppError(
       "could not determine the ascent and descent of the font. " +
       "Please use another font"
     );
   }
-  fontMetricHeight = ascent - descent;
+  _fontMetricHeight = _ascent - _descent;
   /**
    * normally font size includes the top and bottom padding but those are going
    * to be stripped and handled by line_distance and furigana_offset instead,
@@ -542,7 +542,7 @@ export function processSubs(
     .slice(0, includeValuesCount)
     .reduce((sum, n) => sum + n, 0) / includeValuesCount;
 
-  const percentDiff = (fontMetricHeight - charSizeAvg) / charSizeAvg;
+  const percentDiff = (_fontMetricHeight - charSizeAvg) / charSizeAvg;
   subs.params.styles.text.fontsize *= 1 + percentDiff;
   subs.params.styles.furigana.fontsize *= 1 + percentDiff;
 

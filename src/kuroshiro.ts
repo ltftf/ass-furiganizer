@@ -6,26 +6,26 @@ import { Dialogue, Line } from "./types.js";
 import { NodeType, parse } from "node-html-parser";
 import { secondsToTime } from "./time.js";
 
-let kuroshiro: any;
+let _kuroshiro: any;
 try {
-  kuroshiro = new Kuroshiro.default();
+  _kuroshiro = new Kuroshiro.default();
 } catch {
-  kuroshiro = new Kuroshiro();
+  _kuroshiro = new Kuroshiro();
 }
 
-let analyzer: string;
-let inited = false;
+let _analyzer: string;
+let _inited = false;
 
-export function setAnalyzer(_analyzer: string) {
-  analyzer = _analyzer;
+export function setAnalyzer(analyzer: string) {
+  _analyzer = analyzer;
 }
 
 export async function furiganize(srt: SrtDialogue[]): Promise<Dialogue[]> {
-  if (!inited) {
-    await kuroshiro.init(
-      analyzer === "mecab" ? new MecabAnalyzer() : new KuromojiAnalyzer()
+  if (!_inited) {
+    await _kuroshiro.init(
+      _analyzer === "mecab" ? new MecabAnalyzer() : new KuromojiAnalyzer()
     );
-    inited = true;
+    _inited = true;
   }
   const dialogues: Dialogue[] = [];
   for (const srtBlock of srt) {
@@ -46,7 +46,7 @@ export async function furiganize(srt: SrtDialogue[]): Promise<Dialogue[]> {
     };
     for (const srtLine of srtBlock.lines) {
       const line: Line = [];
-      const result = await kuroshiro.convert(srtLine, {
+      const result = await _kuroshiro.convert(srtLine, {
         to: "hiragana",
         mode: "furigana",
         delimiter_start: "[furigana_start]",

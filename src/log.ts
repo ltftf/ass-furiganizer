@@ -1,5 +1,11 @@
 import chalk, { ChalkInstance } from "chalk"
 
+let _verbose: boolean;
+
+export function setVerbose(verbose: boolean) {
+  _verbose = verbose;
+}
+
 export function style(text: string, color?: keyof ChalkInstance, bold?: boolean) {
   let style = chalk;
   if (color) {
@@ -11,8 +17,10 @@ export function style(text: string, color?: keyof ChalkInstance, bold?: boolean)
   return style(text);
 }
 
-export function info(message: string) {
-  console.log(`${style("info", "blue")}: ${message}...`);
+export function info(message: string, printAlways?: boolean) {
+  if (printAlways || _verbose) {
+    console.log(`${style("info", "blue")}: ${message}`);
+  }
 }
 export function warning(message: string, prefix?: string) {
   let text = "";

@@ -1,12 +1,12 @@
 import fluentFfmpeg from "@ts-ffmpeg/fluent-ffmpeg";
 import { path as ffprobePath } from "@ffprobe-installer/ffprobe";
 import { exec } from "child_process";
-import { warning } from "./log.js";
+import { info, warning } from "./log.js";
 import { basename } from "path";
 import { VideoData } from "./types.js";
 import { escapeQuotes } from "./utils/string.js";
 
-let fluentFfmpegPathSet = false;
+let _fluentFfmpegPathSet = false;
 
 function getMatrixString(
   colorRange: string | undefined,
@@ -52,19 +52,26 @@ function getResolution(
 
 function getDataFluent(video: string): Promise<VideoData> {
   return new Promise((resolve, reject) => {
-    if (!fluentFfmpegPathSet) {
+    if (!_fluentFfmpegPathSet) {
       try {
         fluentFfmpeg.setFfprobePath(ffprobePath);
-        fluentFfmpegPathSet = true;
+        _fluentFfmpegPathSet = true;
       } catch {
         return reject();
       }
     }
-    fluentFfmpeg.ffprobe(video, (err, data) => {
+    fluentFfmpeg.ffprobe(video, (err: Error, data) => {
       if (err) {
-        return reject();
+        if (err.message.toLowerCase().includes("no such file or directory")) {
+          return reject("file does not exist.");
+        } else {
+          return reject();
+        }
       }
       const streamIndex = data.streams.findIndex((s) => s.codec_type === "video");
+      if (streamIndex === -1) {
+        return reject("could not find the video stream. Is the file a video?");
+      }
       const stream = data.streams[streamIndex];
       if (!stream) {
         return reject();
@@ -120,7 +127,12 @@ function getDataCmd(video: string): Promise<VideoData> {
 export async function getVideoResolution(video: string): Promise<VideoData> {
   try {
     return await getDataFluent(video);
-  } catch {
-    return await getDataCmd(video);
+  } catch (e: any) {
+    if (e) {
+      throw e;
+    } else {
+      info("failed to get the video resolution, trying the backup method...");
+      return await getDataCmd(video);
+    }
   }
 }

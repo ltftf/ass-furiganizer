@@ -1,8 +1,8 @@
 import path from "path";
 
-export function setExtension(fileName: string, extension: string) {
+export function setExtension(fileName: string, ext?: string) {
   const { dir, name } = path.parse(fileName);
-  return path.join(dir, `${name}.${extension}`);
+  return path.format({ dir, name, ext });
 }
 
 export function escapeQuotes(str: string) {

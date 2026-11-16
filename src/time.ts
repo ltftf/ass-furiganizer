@@ -1,7 +1,7 @@
-let shiftBySec: number | undefined;
+let _shiftBySec: number | undefined;
 
-export function setDialoguesShift(sec: number | undefined) {
-  shiftBySec = sec;
+export function setDialoguesShift(shiftBySec: number | undefined) {
+  _shiftBySec = shiftBySec;
 }
 
 export function secondsToTime(seconds: number): string {
@@ -17,8 +17,8 @@ export function secondsToTime(seconds: number): string {
    *  You MUST NOT use any more or less than two digits for mm, ss and dd!"
    */
   seconds = Math.round(seconds * 100) / 100;
-  if (shiftBySec) {
-    seconds += shiftBySec;
+  if (_shiftBySec) {
+    seconds += _shiftBySec;
   }
   if (seconds >= 595 * 60 * 60) {
     throw "subtitles more than 595 hours long are not supported";
@@ -47,7 +47,7 @@ export function timeToSeconds(time: string): number {
 }
 
 export function processAssTime(time: string) {
-  if (shiftBySec) {
+  if (_shiftBySec) {
     return secondsToTime(timeToSeconds(time));
   }
   return time;
