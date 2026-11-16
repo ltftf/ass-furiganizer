@@ -95,6 +95,23 @@ try {
 
   setVerbose(verbose);
 
+  const defaultConfig = join(import.meta.dirname, "..", "default_config.toml");
+  if (!configName) {
+    const configFile = join(ospath.data(), PKG_NAME, "config.toml");
+    try {
+      await fs.access(configFile, fs.constants.F_OK);
+    } catch {
+      try {
+        await fs.cp(defaultConfig, configFile);
+        info(`created new config at ${configFile}`, true);
+      } catch (e: any) {
+        throw new AppError(
+          `could not create config file at ${configFile}: ${e.message}`
+        );
+      }
+    }
+  }
+
   let config_params: ConfigParams;
   let configData: string;
   const configFileName = `${configName ?? "config"}.toml`;
@@ -102,7 +119,7 @@ try {
   const configPath = join(configDir, configFileName);
   info(`reading config ${configPath}...`);
   try {
-    configData = await fs.readFile(configPath, { encoding: "utf-8" });
+    configData = await fs.readFile(configPath, "utf-8");
   } catch (e: any) {
     if (e.code === "ENOENT") {
       throw new AppError(`found no '${configFileName}' at ${configDir}`);
@@ -122,10 +139,8 @@ try {
     config_params,
     configFileName,
     parseTOML(
-      (await fs.readFile(
-        join(import.meta.dirname, "..", "default_config.toml"),
-        { encoding: "utf-8" }
-      )).replace(/^#.*$/m, "").replace(/^#/gm, "")
+      (await fs.readFile(defaultConfig, "utf-8"))
+        .replace(/^#.*$/m, "").replace(/^#/gm, "")
     )
   );
 

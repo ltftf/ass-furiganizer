@@ -4,7 +4,7 @@ import { join } from "path"
 const pkg = JSON.parse(
   await fs.readFile(
     join(import.meta.dirname, "..", "package.json"),
-    { encoding: 'utf-8' }
+    "utf-8"
   )
 );
 
