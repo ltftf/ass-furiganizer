@@ -4,7 +4,7 @@ import ospath from "ospath";
 import { join } from "path";
 import { PKG_NAME } from "./package.js";
 import { access, constants, cp } from "fs/promises";
-import { confirm } from '@inquirer/prompts';
+import confirm from '@inquirer/confirm';
 
 program
   .usage("[option]")

@@ -2,7 +2,7 @@ import { exec } from "child_process";
 import { MatroskaData } from "./types.js";
 import { escapeQuotes, setExtension } from "./utils/string.js";
 import { error, info, warning } from "./log.js";
-import { select } from "@inquirer/prompts";
+import select from "@inquirer/select";
 import { join } from "path";
 import ospath from "ospath";
 import { selectTheme } from "./promptThemes.js";
