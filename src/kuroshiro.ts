@@ -2,7 +2,7 @@ import { Dialogue as SrtDialogue } from "@ltftf/srt-parser-2";
 import Kuroshiro from "kuroshiro";
 import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
 import MecabAnalyzer from "kuroshiro-analyzer-mecab";
-import { Dialogue, Line } from "./types.js";
+import { Chunk, Dialogue, Line } from "./types.js";
 import { NodeType, parse } from "node-html-parser";
 import { secondsToTime } from "./time.js";
 
@@ -19,6 +19,11 @@ let _inited = false;
 export function setAnalyzer(analyzer: string) {
   _analyzer = analyzer;
 }
+
+const getNewPositionObj = () => ({
+  text: { x: 0, y: 0 },
+  furigana: { x: 0, y: 0 },
+});
 
 export async function furiganize(srt: SrtDialogue[]): Promise<Dialogue[]> {
   if (!_inited) {
@@ -58,10 +63,7 @@ export async function furiganize(srt: SrtDialogue[]): Promise<Dialogue[]> {
           line.push({
             text: element.innerText,
             furigana: "",
-            position: {
-              text: { x: 0, y: 0 },
-              furigana: { x: 0, y: 0 },
-            },
+            position: getNewPositionObj(),
           });
         } else if (
           element.nodeType === NodeType.ELEMENT_NODE &&
@@ -73,11 +75,22 @@ export async function furiganize(srt: SrtDialogue[]): Promise<Dialogue[]> {
           line.push({
             text,
             furigana,
-            position: {
-              text: { x: 0, y: 0 },
-              furigana: { x: 0, y: 0 },
-            },
+            position: getNewPositionObj(),
           });
+        }
+      }
+      /**
+       * split chunks containing spaces into multiple chunks due to
+       * possible incorrect width measurement of these strings
+       */
+      for (let i = line.length - 1; i >= 0; i--) {
+        const chunk = line[i];
+        if (!chunk.furigana && chunk.text.includes(" ")) {
+          const insert: Chunk[] = [];
+          for (const text of chunk.text.match(/(?: |[^ ]+)/g)!) {
+            insert.push({ text, furigana: "", position: getNewPositionObj() });
+          }
+          line.splice(i, 1, ...insert);
         }
       }
       dialogue.lines.push(line);

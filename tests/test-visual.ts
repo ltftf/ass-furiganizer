@@ -154,8 +154,8 @@ const tests: TestBlock[] = [
     draw: grid,
     tests: [1, 2, 3, 4, 5, 6, 7, 8, 9].flatMap(position => {
       return [
-        // "start",
-        // "center",
+        "start",
+        "center",
         "end"
       ].map(align => {
         return [
