@@ -2,7 +2,7 @@ import { describe, test } from "node:test";
 import assert from "node:assert";
 import { setDialoguesShift, secondsToTime, timeToSeconds } from '../../src/time.js'
 
-describe("secondsToTime()", () => {
+test("secondsToTime()", () => {
   for (const [seconds, result] of [
     [0.1, "0:00:00.10"],
     [0.100, "0:00:00.10"],
@@ -25,9 +25,7 @@ describe("secondsToTime()", () => {
     [0, "0:00:00.00"],
     [-1, ""],
   ]) {
-    test(`${seconds} seconds should turn to ${result}`, () => {
-      assert.strictEqual(secondsToTime(seconds), result);
-    });
+    assert.strictEqual(secondsToTime(seconds), result);
   }
   for (const [seconds, shift, result] of [
     [0.1, 0.1, "0:00:00.20"],
@@ -42,18 +40,15 @@ describe("secondsToTime()", () => {
     [60, -60, "0:00:00.00"],
     [60, -70, ""],
   ]) {
-    test(`${seconds} seconds shifted by ${shift} should turn to ${result}`, () => {
-      setDialoguesShift(shift);
-      assert.strictEqual(secondsToTime(seconds), result);
-    });
+    setDialoguesShift(shift);
+    assert.strictEqual(secondsToTime(seconds), result);
   }
-});
-
-test('595 hours or more should throw an error', () => {
+  // 595 hours or more should throw an error
   assert.throws(() => secondsToTime(3600 * 596));
 });
 
-describe("timeToSeconds()", () => {
+
+test("timeToSeconds()", () => {
   for (const [string, result] of [
     ["0:00:00.10", 0.1],
     ["0:00:00.12", 0.12],
@@ -68,8 +63,6 @@ describe("timeToSeconds()", () => {
     ["5:45:31.75", 3600 * 5 + 45 * 60 + 31.75],
     ["0:00:00.00", 0],
   ]) {
-    test(`${string} should turn to ${result} seconds`, () => {
-      assert.strictEqual(timeToSeconds(string), result);
-    });
+    assert.strictEqual(timeToSeconds(string), result);
   }
 });

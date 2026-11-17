@@ -2,7 +2,7 @@ import { describe, test } from "node:test";
 import assert from "node:assert";
 import { booleanToAss, colorToAss } from "../../../src/utils/ass.js";
 
-describe("colorToAss()", () => {
+test("colorToAss()", () => {
   /**
    * .ass color format: &HAABBGGRR
    * AA - alpha (opacity reversed)
@@ -47,7 +47,7 @@ describe("colorToAss()", () => {
     ["lime", "&H0000FF00"],
     ["red", "&H000000FF"],
   ]) {
-    test(`${color} should convert to ${expected}`, () => assert.strictEqual(colorToAss(color), expected));
+    assert.strictEqual(colorToAss(color), expected);
   }
 
   for (const invalidColor of [
@@ -70,7 +70,7 @@ describe("colorToAss()", () => {
     "&hae-",
     "&hae-1",
   ]) {
-    test(`${invalidColor} should throw an error`, () => assert.throws(() => colorToAss(invalidColor)));
+    assert.throws(() => colorToAss(invalidColor));
   }
 });
 
