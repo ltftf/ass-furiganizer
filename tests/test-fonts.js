@@ -3,16 +3,13 @@
  * https://archive.org/download/assorted-japanese-fonts
  * https://fonts.google.com/?script=Jpan
  */
-import { parseTOML, stringifyTOML } from "confbox";
+import { stringifyTOML } from "confbox";
 import fs from "fs/promises";
-import { rmSync } from "fs";
 import path from "path";
-import ospath from "ospath";
 import { spawn, execSync } from "child_process";
 import { parse, stringify } from "ass-compiler";
 import { config_params, CONFIG_NAME, CONFIG_PATH } from "./getConfigParams.js";
 import { openSync } from "fontkit";
-import { toSrt } from "@ltftf/srt-parser-2";
 import { queue } from "async";
 
 const SKIP_TTC = true;

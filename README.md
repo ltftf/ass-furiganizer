@@ -58,6 +58,7 @@ A CLI utility to easily generate beautiful Japanese subtitles with furigana.
 	+ [`substitute`](#substitute)
 		* [`text`](#text)
 		* [`furigana`](#furigana)
+		* [`remove_unsupported_chars`](#remove_unsupported_chars)
 - [Configuration types](#configuration-types)
 	+ [`Color`](#color-2)
 	+ [`AxesArray`](#axesarray)
@@ -94,7 +95,7 @@ furiganize --help
 This program requires at least a subtitles file and a video file. Suppose you have both in the current directory:
 
 ```shell
-furiganize -i sub.srt -v video.mkv
+furiganize -v video.mkv -i sub.srt
 ```
 
 This will create a `video.ass` file next to the `video.mkv` file.
@@ -102,16 +103,20 @@ This will create a `video.ass` file next to the `video.mkv` file.
 It can be used in bulk. Suppose you have `subs` and `videos` folders in the current directory containing equal amount of subtitle and video files respectively:
 
 ```shell
-furiganize -i subs/*.srt -v videos/*.mp4
+furiganize -v videos/*.mp4 -i subs/*.srt
 ```
+
+If you have an `.mkv` video with attached Japanese subtitles, they can be extracted and used automatically:
+
+```shell
+furiganize -v video.mkv
+```
+
+For this [MKVToolNix](`https://mkvtoolnix.download/downloads.html`) tools need to be installed separately and be in the PATH.
 
 ## Configuration file
 
-During installation a configuration file is created in your data directory. `furiganizer-config` command is used for managing the config directory:
-
-```shell
-furiganizer-config --help
-```
+A configuration file will be created at your data directory on the first run. `furiganizer-config` command is used for managing the config directory.
 
 To see where the config directory is located run:
 
@@ -363,13 +368,40 @@ Description: you may be prompted for some options (variable font, font collectio
 
 Type: [string, string][]
 
-Description: substitute one or more characters. May be useful when there are unimportant characters that are unsupported by the font. Takes an array consisting of arrays that have two strings: [`<match>`, `<substitute>`]. `<substitute>` should be an empty string to remove the `<match>` character(s). `<match>` can be a Unicode string representing one character: `U+0049`, `U+1F610`.
+Description: substitute one or more characters. May be used when there are characters that are unsupported by the font. Takes an array consisting of arrays that have two strings: [`<match>`, `<substitute>`]. `<match>` can also be a Unicode string representing one character: `U+0049`, `U+1F610`.
+
+Example:
+
+```
+[substitute]
+text = [
+  ["⸨", "(("],
+  ["⸩", "))"],
+  ["➨", "->"],
+  ["😀", ":)"],
+  ["U+200e", ""],
+]
+```
 
 #### furigana
 
 Type: [string, string][]
 
 Description: may be useful for furigana if you, for example, need a specific katakana phrase as the analyzer will turn everything to hiragana. Works the same as for [`text`](#text) but will only match the full phrase.
+
+#### remove_unsupported_chars
+
+Type: boolean
+
+Description: automatically remove all the characters that are unsupported by the font. Equivalent to 
+```
+[substitute]
+text = [
+  ["<unsupported_char1>", ""],
+  ["<unsupported_char2>", ""],
+  ...
+]
+```
 
 ## Configuration types
 

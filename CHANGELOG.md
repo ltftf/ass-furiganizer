@@ -35,3 +35,19 @@
 ### Changed
 
 - use_inline_furigana only works with the normal ascii parentheses
+
+## [1.4.0] - 2026-11-18
+
+### Added
+
+- automatically use JPN subtitles attached to the .mkv video
+- remove_unsupported_chars option
+- --verbose option
+
+### Changed
+
+- config file is created on the first program run instead of the `postinstall` script
+
+### Fixed
+
+- incorrect placement of chunks that contain spaces
