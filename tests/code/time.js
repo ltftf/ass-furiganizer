@@ -1,8 +1,9 @@
-import { describe, expect, test } from 'vitest'
+import { describe, test } from "node:test";
+import assert from "node:assert";
 import { setDialoguesShift, secondsToTime, timeToSeconds } from '../../src/time.js'
 
-describe("secondsToTime", () => {
-  test.for([
+describe("secondsToTime()", () => {
+  for (const [seconds, result] of [
     [0.1, "0:00:00.10"],
     [0.100, "0:00:00.10"],
     [0.120, "0:00:00.12"],
@@ -23,15 +24,12 @@ describe("secondsToTime", () => {
     [3600 * 5 + 45 * 60 + 31.75, "5:45:31.75"],
     [0, "0:00:00.00"],
     [-1, ""],
-  ] as [number, string][])("%f seconds should turn to %s", ([seconds, result]) => {
-    expect(secondsToTime(seconds)).toBe(result);
-  });
-
-  test('595 hours or more should throw an error', () => {
-    expect(() => secondsToTime(3600 * 596)).toThrow();
-  });
-
-  test.for([
+  ]) {
+    test(`${seconds} seconds should turn to ${result}`, () => {
+      assert.strictEqual(secondsToTime(seconds), result);
+    });
+  }
+  for (const [seconds, shift, result] of [
     [0.1, 0.1, "0:00:00.20"],
     [60, 0, "0:01:00.00"],
     [60, 1, "0:01:01.00"],
@@ -43,14 +41,20 @@ describe("secondsToTime", () => {
     [60, -1.999, "0:00:58.00"],
     [60, -60, "0:00:00.00"],
     [60, -70, ""],
-  ] as [number, number, string][])("%f shifted by %f seconds should turn to %s", ([seconds, shift, result]) => {
-    setDialoguesShift(shift);
-    expect(secondsToTime(seconds)).toBe(result);
-  });
+  ]) {
+    test(`${seconds} seconds shifted by ${shift} should turn to ${result}`, () => {
+      setDialoguesShift(shift);
+      assert.strictEqual(secondsToTime(seconds), result);
+    });
+  }
 });
 
-describe("timeToSeconds", () => {
-  test.for([
+test('595 hours or more should throw an error', () => {
+  assert.throws(() => secondsToTime(3600 * 596));
+});
+
+describe("timeToSeconds()", () => {
+  for (const [string, result] of [
     ["0:00:00.10", 0.1],
     ["0:00:00.12", 0.12],
     ["0:00:00.07", 0.07],
@@ -63,7 +67,9 @@ describe("timeToSeconds", () => {
     ["48:00:00.00", 3600 * 48],
     ["5:45:31.75", 3600 * 5 + 45 * 60 + 31.75],
     ["0:00:00.00", 0],
-  ] as [string, number][])("%s should turn to %f seconds", ([string, result]) => {
-    expect(timeToSeconds(string)).toBe(result);
-  });
+  ]) {
+    test(`${string} should turn to ${result} seconds`, () => {
+      assert.strictEqual(timeToSeconds(string), result);
+    });
+  }
 });
